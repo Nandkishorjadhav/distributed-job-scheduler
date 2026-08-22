@@ -9,8 +9,6 @@
 
 BEGIN;
 
--- ─── Drop old objects (safe to re-run after 001) ─────────────────────────────
-
 DROP TABLE IF EXISTS
     job_metrics,
     recurring_job_definitions,

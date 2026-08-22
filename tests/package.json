@@ -9,11 +9,13 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "@job-scheduler/shared": "file:../packages/shared"
+    "@job-scheduler/shared": "file:../packages/shared",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
     "@types/supertest": "^6.0.2",
+    "@types/jsonwebtoken": "^9.0.6",
     "vitest": "^1.6.0",
     "@vitest/coverage-v8": "^1.6.0",
     "supertest": "^7.0.0",

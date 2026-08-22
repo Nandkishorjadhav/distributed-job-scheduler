@@ -22,8 +22,7 @@ export function authenticate(
   const apiKey = req.headers['x-api-key'] as string | undefined;
 
   if (apiKey) {
-    // TODO: look up hashed API key in DB
-    // For now, stub — will be implemented with business logic
+    // API Key authentication stub — passes through if provided
     next();
     return;
   }
@@ -43,7 +42,10 @@ export function authenticate(
     const payload = jwt.verify(token, secret) as { id: string; email: string };
     req.user = { id: payload.id, email: payload.email };
     next();
-  } catch {
-    next(new AppError(401, 'Invalid or expired token', 'TOKEN_INVALID'));
+  } catch (err: unknown) {
+    if (err instanceof jwt.TokenExpiredError) {
+      return next(new AppError(401, 'Token expired', 'TOKEN_EXPIRED'));
+    }
+    return next(new AppError(401, 'Invalid token', 'TOKEN_INVALID'));
   }
 }
