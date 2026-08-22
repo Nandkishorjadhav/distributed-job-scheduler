@@ -31,7 +31,7 @@ echo === CRITICAL CLAIM QUERY TEST (should use idx_jobs_claim) ===
 
 echo.
 echo === VIEW: v_pending_jobs ===
-"%PSQL%" -U postgres -h 127.0.0.1 -p 5432 -d job_scheduler -c "SELECT id, name, type, status, priority FROM v_pending_jobs;"
+"%PSQL%" -U postgres -h 127.0.0.1 -p 5432 -d job_scheduler -c "SELECT id, name, job_type, job_status, priority FROM v_pending_jobs;"
 
 echo.
 echo === VIEW: v_queue_stats ===
