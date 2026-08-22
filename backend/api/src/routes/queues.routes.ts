@@ -1,68 +1,51 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
+import { CreateQueueSchema, UpdateQueueSchema, QueueQuerySchema, SubmitJobSchema, SubmitBatchSchema, JobFilterSchema } from '@job-scheduler/shared';
+import { validate, validateQuery } from '../middleware/validate';
+import {
+  createQueue,
+  listQueues,
+  getQueue,
+  updateQueue,
+  pauseQueue,
+  resumeQueue,
+  deleteQueue,
+  getQueueStats,
+} from '../controllers/queue.controller';
+import { createJob, createBatchJobs, listJobs } from '../controllers/job.controller';
 
 export const queuesRouter = Router();
 
-// POST /api/v1/queues
-queuesRouter.post('/', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// POST /api/v1/queues — Create a new queue
+queuesRouter.post('/', validate(CreateQueueSchema), createQueue);
 
-// GET /api/v1/queues/:queueId
-queuesRouter.get('/:queueId', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// GET /api/v1/queues — List queues (optional ?projectId=...)
+queuesRouter.get('/', validateQuery(QueueQuerySchema), listQueues);
 
-// PATCH /api/v1/queues/:queueId
-queuesRouter.patch('/:queueId', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// GET /api/v1/queues/:queueId — Get queue details
+queuesRouter.get('/:queueId', getQueue);
 
-// DELETE /api/v1/queues/:queueId
-queuesRouter.delete('/:queueId', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// PATCH /api/v1/queues/:queueId — Update queue configuration
+queuesRouter.patch('/:queueId', validate(UpdateQueueSchema), updateQueue);
 
-// POST /api/v1/queues/:queueId/pause
-queuesRouter.post('/:queueId/pause', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// POST /api/v1/queues/:queueId/pause — Pause job processing
+queuesRouter.post('/:queueId/pause', pauseQueue);
 
-// POST /api/v1/queues/:queueId/resume
-queuesRouter.post('/:queueId/resume', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// POST /api/v1/queues/:queueId/resume — Resume job processing
+queuesRouter.post('/:queueId/resume', resumeQueue);
 
-// POST /api/v1/queues/:queueId/jobs
-queuesRouter.post('/:queueId/jobs', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// DELETE /api/v1/queues/:queueId — Safely delete queue
+queuesRouter.delete('/:queueId', deleteQueue);
 
-// GET /api/v1/queues/:queueId/jobs
-queuesRouter.get('/:queueId/jobs', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// GET /api/v1/queues/:queueId/stats — Get queue statistics
+queuesRouter.get('/:queueId/stats', getQueueStats);
 
-// GET /api/v1/queues/:queueId/dlq
-queuesRouter.get('/:queueId/dlq', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// ── Job Submission & Queue-scoped Jobs ───────────────────────────────────────
 
-// POST /api/v1/queues/:queueId/dlq/requeue
-queuesRouter.post('/:queueId/dlq/requeue', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// POST /api/v1/queues/:queueId/jobs — Submit a job to a queue
+queuesRouter.post('/:queueId/jobs', validate(SubmitJobSchema), createJob);
 
-// GET /api/v1/queues/:queueId/metrics
-queuesRouter.get('/:queueId/metrics', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// POST /api/v1/queues/:queueId/batch — Submit a batch of jobs to a queue
+queuesRouter.post('/:queueId/batch', validate(SubmitBatchSchema), createBatchJobs);
 
-// POST /api/v1/queues/:queueId/recurring
-queuesRouter.post('/:queueId/recurring', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
-
-// GET /api/v1/queues/:queueId/recurring
-queuesRouter.get('/:queueId/recurring', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// GET /api/v1/queues/:queueId/jobs — List jobs in a queue
+queuesRouter.get('/:queueId/jobs', validateQuery(JobFilterSchema), listJobs);

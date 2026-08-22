@@ -1,23 +1,18 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
+import { CreateOrgSchema, UpdateOrgSchema, PaginationSchema } from '@job-scheduler/shared';
+import { validate, validateQuery } from '../middleware/validate';
+import { createOrg, listOrgs, getOrg, updateOrg } from '../controllers/org.controller';
 
 export const orgsRouter = Router();
 
 // POST /api/v1/orgs
-orgsRouter.post('/', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+orgsRouter.post('/', validate(CreateOrgSchema), createOrg);
+
+// GET /api/v1/orgs
+orgsRouter.get('/', validateQuery(PaginationSchema), listOrgs);
 
 // GET /api/v1/orgs/:orgId
-orgsRouter.get('/:orgId', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+orgsRouter.get('/:orgId', getOrg);
 
-// GET /api/v1/orgs/:orgId/members
-orgsRouter.get('/:orgId/members', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
-
-// POST /api/v1/orgs/:orgId/members
-orgsRouter.post('/:orgId/members', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// PATCH /api/v1/orgs/:orgId
+orgsRouter.patch('/:orgId', validate(UpdateOrgSchema), updateOrg);

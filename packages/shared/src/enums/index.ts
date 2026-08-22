@@ -3,6 +3,7 @@
 export enum JobStatus {
   PENDING = 'pending',
   DELAYED = 'delayed',
+  SCHEDULED = 'scheduled',
   RUNNING = 'running',
   COMPLETED = 'completed',
   FAILED = 'failed',
@@ -15,6 +16,7 @@ export enum JobStatus {
 export enum QueueStatus {
   ACTIVE = 'active',
   PAUSED = 'paused',
+  ARCHIVED = 'archived',
 }
 
 // ─── Worker Statuses ─────────────────────────────────────────────────────────
@@ -41,6 +43,7 @@ export enum JobType {
   SCHEDULED = 'scheduled',
   RECURRING = 'recurring',
   BATCH = 'batch',
+  BATCH_CHILD = 'batch_child',
 }
 
 // ─── Log Levels ───────────────────────────────────────────────────────────────

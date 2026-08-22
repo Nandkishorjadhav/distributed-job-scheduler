@@ -1,6 +1,13 @@
 import { defineConfig } from 'vitest/config';
+import path from 'path';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@job-scheduler/shared': path.resolve(__dirname, '../packages/shared/src'),
+      '@job-scheduler/backend-shared': path.resolve(__dirname, '../backend/shared/src'),
+    },
+  },
   test: {
     globals: true,
     environment: 'node',
@@ -10,7 +17,6 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       exclude: ['node_modules/', 'dist/'],
     },
-    // Increase timeout for integration tests that need DB
     testTimeout: 15000,
   },
 });

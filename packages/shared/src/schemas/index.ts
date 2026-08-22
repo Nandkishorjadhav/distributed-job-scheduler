@@ -14,14 +14,23 @@ export const RetryPolicySchema = z.object({
 // ─── Queue Schemas ────────────────────────────────────────────────────────────
 
 export const CreateQueueSchema = z.object({
+  projectId: z.string().uuid(),
   name: z.string().min(1).max(128),
+  description: z.string().max(1024).optional(),
   priority: z.number().int().min(1).max(10).default(5),
   concurrencyLimit: z.number().int().min(1).max(1000).default(10),
-  retryPolicy: RetryPolicySchema.default({}),
+  retryPolicy: RetryPolicySchema.optional(),
   dlqEnabled: z.boolean().default(true),
 });
 
-export const UpdateQueueSchema = CreateQueueSchema.partial();
+export const UpdateQueueSchema = z.object({
+  name: z.string().min(1).max(128).optional(),
+  description: z.string().max(1024).optional(),
+  priority: z.number().int().min(1).max(10).optional(),
+  concurrencyLimit: z.number().int().min(1).max(1000).optional(),
+  retryPolicy: RetryPolicySchema.optional(),
+  dlqEnabled: z.boolean().optional(),
+});
 
 // ─── Job Schemas ──────────────────────────────────────────────────────────────
 
@@ -75,13 +84,28 @@ export const CreateOrgSchema = z.object({
     .regex(/^[a-z0-9-]+$/),
 });
 
+export const UpdateOrgSchema = CreateOrgSchema.partial();
+
 export const CreateProjectSchema = z.object({
+  organizationId: z.string().uuid(),
   name: z.string().min(1).max(128),
   slug: z
     .string()
     .min(1)
     .max(64)
     .regex(/^[a-z0-9-]+$/),
+  description: z.string().max(1024).optional(),
+});
+
+export const UpdateProjectSchema = z.object({
+  name: z.string().min(1).max(128).optional(),
+  slug: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-z0-9-]+$/)
+    .optional(),
+  description: z.string().max(1024).optional(),
 });
 
 // ─── Query / Pagination Schemas ───────────────────────────────────────────────
@@ -89,6 +113,14 @@ export const CreateProjectSchema = z.object({
 export const PaginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export const ProjectQuerySchema = PaginationSchema.extend({
+  organizationId: z.string().uuid().optional(),
+});
+
+export const QueueQuerySchema = PaginationSchema.extend({
+  projectId: z.string().uuid().optional(),
 });
 
 export const JobFilterSchema = PaginationSchema.extend({
@@ -106,6 +138,10 @@ export type CreateRecurringJobInput = z.infer<typeof CreateRecurringJobSchema>;
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type CreateOrgInput = z.infer<typeof CreateOrgSchema>;
+export type UpdateOrgInput = z.infer<typeof UpdateOrgSchema>;
 export type CreateProjectInput = z.infer<typeof CreateProjectSchema>;
+export type UpdateProjectInput = z.infer<typeof UpdateProjectSchema>;
 export type PaginationInput = z.infer<typeof PaginationSchema>;
+export type ProjectQueryInput = z.infer<typeof ProjectQuerySchema>;
+export type QueueQueryInput = z.infer<typeof QueueQuerySchema>;
 export type JobFilterInput = z.infer<typeof JobFilterSchema>;
