@@ -1,0 +1,41 @@
+{
+  "name": "distributed-job-scheduler",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "npm run install:shared && npm run install:backend-shared && npm run install:api && npm run install:scheduler && npm run install:worker && npm run install:frontend",
+    "install:shared": "npm install --install-links --prefix packages/shared",
+    "install:backend-shared": "npm install --install-links --prefix backend/shared",
+    "install:api": "npm install --install-links --prefix backend/api",
+    "install:scheduler": "npm install --install-links --prefix backend/scheduler",
+    "install:worker": "npm install --install-links --prefix backend/worker",
+    "install:frontend": "npm install --install-links --prefix frontend",
+    "build:all": "npm run build:shared && npm run build:backend-shared && npm run build:api && npm run build:scheduler && npm run build:worker && npm run build:frontend",
+    "build:shared": "npm run build --prefix packages/shared",
+    "build:backend-shared": "npm run build --prefix backend/shared",
+    "build:api": "npm run build --prefix backend/api",
+    "build:scheduler": "npm run build --prefix backend/scheduler",
+    "build:worker": "npm run build --prefix backend/worker",
+    "build:frontend": "npm run build --prefix frontend",
+    "dev:api": "npm run dev --prefix backend/api",
+    "dev:scheduler": "npm run dev --prefix backend/scheduler",
+    "dev:worker": "npm run dev --prefix backend/worker",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "typecheck:all": "npm run typecheck --prefix packages/shared && npm run typecheck --prefix backend/shared && npm run typecheck --prefix backend/api && npm run typecheck --prefix backend/scheduler && npm run typecheck --prefix backend/worker",
+    "format": "npx prettier --write \"**/*.{ts,tsx,js,json,md}\" --ignore-path .gitignore",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:build": "docker-compose build"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
