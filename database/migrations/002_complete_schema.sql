@@ -946,7 +946,8 @@ CREATE VIEW v_pending_jobs AS
 SELECT
     j.id,
     j.name,
-    j.type,
+    j.type             AS job_type,
+    j.status           AS job_status,
     j.priority,
     j.payload,
     j.attempt_count,
@@ -956,7 +957,7 @@ SELECT
     j.enqueued_at,
     q.project_id,
     q.concurrency_limit,
-    q.status AS queue_status
+    q.status           AS queue_status
 FROM jobs j
 JOIN queues q ON q.id = j.queue_id
 WHERE j.status = 'pending'

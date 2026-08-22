@@ -68,26 +68,22 @@ INSERT INTO workers (id, project_id, hostname, pid, status, max_concurrency, cur
    'LAPTOP-DEV', 9999, 'offline', 5, 0);
 
 -- ─── Sample Jobs ─────────────────────────────────────────────
-INSERT INTO jobs (id, queue_id, name, type, status, payload, priority, attempt_count, max_attempts) VALUES
+INSERT INTO jobs (id, queue_id, name, type, status, payload, priority, attempt_count, max_attempts, scheduled_at) VALUES
   ('00000000-0000-0000-0006-000000000001',
    '00000000-0000-0000-0004-000000000001',
    'send-welcome-email', 'immediate', 'completed',
-   '{"to":"alice@example.com","template":"welcome"}', 3, 1, 3),
+   '{"to":"alice@example.com","template":"welcome"}', 3, 1, 3, NULL),
 
   ('00000000-0000-0000-0006-000000000002',
    '00000000-0000-0000-0004-000000000001',
    'send-invoice-email', 'immediate', 'pending',
-   '{"to":"bob@example.com","invoice_id":"INV-0042"}', 3, 0, 3),
+   '{"to":"bob@example.com","invoice_id":"INV-0042"}', 3, 0, 3, NULL),
 
   ('00000000-0000-0000-0006-000000000003',
    '00000000-0000-0000-0004-000000000002',
    'generate-monthly-report', 'delayed', 'scheduled',
-   '{"month":"2026-07","format":"pdf"}', 6, 0, 3);
-
--- Update scheduled_at for the delayed job
-UPDATE jobs
-SET scheduled_at = NOW() + INTERVAL '1 hour'
-WHERE id = '00000000-0000-0000-0006-000000000003';
+   '{"month":"2026-07","format":"pdf"}', 6, 0, 3,
+   NOW() + INTERVAL '1 hour');
 
 -- ─── Execution Log for completed job ─────────────────────────
 INSERT INTO job_executions (job_id, worker_id, attempt_number, status, started_at, finished_at, result) VALUES

@@ -1,8 +1,10 @@
 node_modules/
 dist/
 .env
+.env.example
 coverage/
 *.log
 .turbo/
 .DS_Store
 Thumbs.db
+run.md
