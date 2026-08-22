@@ -1,0 +1,22 @@
+{
+  "name": "@job-scheduler/tests",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui"
+  },
+  "dependencies": {
+    "@job-scheduler/shared": "file:../packages/shared"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/supertest": "^6.0.2",
+    "vitest": "^1.6.0",
+    "@vitest/coverage-v8": "^1.6.0",
+    "supertest": "^7.0.0",
+    "typescript": "^5.5.0"
+  }
+}
