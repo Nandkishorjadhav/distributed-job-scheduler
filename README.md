@@ -1,624 +1,123 @@
 # Distributed Job Scheduler
 
-A production-inspired, multi-tenant distributed job scheduling system built with
-**Node.js · TypeScript · Express · PostgreSQL · Redis · React + Vite · Docker**
+A production-inspired, multi-tenant platform for scheduling and executing
+asynchronous background jobs across a distributed group of workers.
 
----
+The project demonstrates how a job processing system can combine an HTTP API,
+durable storage, distributed coordination, and horizontally scalable workers
+while remaining observable and resilient to failures.
 
-## Table of Contents
+## Core Concepts
 
-1. [Project Structure](#project-structure)
-2. [Prerequisites](#prerequisites)
-3. [First-Time Setup](#first-time-setup)
-4. [Starting Everything](#starting-everything)
-5. [Verify It Works](#verify-it-works)
-6. [Stopping Everything](#stopping-everything)
-7. [Running Tests](#running-tests)
-8. [Building for Production](#building-for-production)
-9. [Environment Variables](#environment-variables)
-10. [Troubleshooting](#troubleshooting)
-11. [API Quick Reference](#api-quick-reference)
+- **Jobs** represent units of asynchronous work and may run immediately, after
+  a delay, on a recurring schedule, or as part of a batch.
+- **Queues** organize jobs and provide control over processing, including pause,
+  resume, retry, and dead-letter handling.
+- **Workers** claim available jobs and execute them concurrently. They are
+  stateless, so additional instances can be added to increase throughput.
+- **The scheduler** promotes delayed jobs, evaluates recurring job definitions,
+  and coordinates scheduling work through leader election.
+- **Organizations and projects** provide tenant and resource boundaries for
+  users, queues, jobs, and metrics.
 
----
+## Architecture
 
-## Project Structure
-
-```
-distributed-job-scheduler/
-│
-├── packages/shared/        → Shared TypeScript types, enums, Zod schemas
-│
-├── backend/
-│   ├── shared/             → DB pool, Redis client, repository stubs
-│   ├── api/                → Express REST API            (port 3000)
-│   ├── scheduler/          → Cron dispatcher + delayed job poller
-│   └── worker/             → Job executor (scales horizontally)
-│
-├── frontend/               → React + Vite dashboard      (port 5173)
-│
-├── database/
-│   ├── migrations/         → SQL schema files (run once)
-│   └── seeds/              → Dev seed data
-│
-├── tests/                  → Vitest unit + integration tests
-├── docs/                   → Architecture & ER diagrams
-│
-├── .env.example            → Template for all environment variables
-├── docker-compose.yml      → Starts PostgreSQL + Redis + all services
-└── README.md               → This file
+```text
+                         React Dashboard
+                                |
+                         REST API (Express)
+                           /            \\
+                          /              \\
+                 PostgreSQL              Redis
+                durable state       locks and events
+                          \\              /
+                           \\            /
+                    Scheduler and Workers
 ```
 
----
+### API service
 
-## Prerequisites
+The API is the main entry point for clients. It handles authentication,
+authorization, tenant-aware resource management, job submission, queue
+controls, and access to execution status and metrics.
 
-Install these before starting:
+### PostgreSQL
 
-| Tool | Version | Download |
-|---|---|---|
-| Node.js | >= 20.x | https://nodejs.org |
-| npm | >= 10.x | (comes with Node.js) |
-| Docker Desktop | >= 24.x | https://www.docker.com/products/docker-desktop |
-| Git | any | https://git-scm.com |
+PostgreSQL is the durable source of truth for organizations, projects, queues,
+jobs, workers, schedules, execution state, and related metadata. Keeping job
+state in a relational database makes transitions and ownership changes
+transactional and queryable.
 
-> **Windows users:** This project uses `install-links=true` in `.npmrc`.
-> This avoids the Windows symlink permission error that npm workspaces cause.
+### Redis
 
----
+Redis provides coordination that should not be implemented through application
+process memory. It is used for scheduler leader-election locks and for
+publishing real-time events to interested consumers such as the dashboard.
 
-## First-Time Setup
+### Scheduler
 
-> Run these **once** when you clone the project for the first time.
+The scheduler discovers work that has become eligible, including delayed and
+recurring jobs. Leader election ensures that only one scheduler instance
+performs scheduling duties at a time, preventing duplicate promotion of the
+same scheduled work.
 
-### Step 1 — Clone the repository
+### Workers
 
-```bash
-git clone <your-repo-url>
-cd distributed-job-scheduler
+Workers continuously look for executable jobs, claim them, and report their
+progress. A worker heartbeat makes worker liveness visible, while concurrency
+limits prevent one process from consuming unlimited resources.
+
+## Job Lifecycle
+
+1. A client submits a job to a queue through the API.
+2. The job is stored with its scheduling information and an initial state.
+3. The scheduler makes delayed or recurring work available when its schedule
+   is due.
+4. A worker atomically claims an available job so competing workers cannot
+   execute the same job at the same time.
+5. The worker records success or failure and emits relevant state changes.
+6. Failed jobs can be retried according to queue policy or moved to a
+   dead-letter queue for inspection and later reprocessing.
+
+## Reliability and Scaling
+
+- PostgreSQL transactions protect state transitions and preserve a durable
+  history of job ownership and status.
+- `SELECT ... FOR UPDATE SKIP LOCKED` supports safe concurrent job claiming
+  without forcing workers to wait on jobs already being processed.
+- Redis locks provide distributed scheduler coordination.
+- Worker heartbeats help identify unavailable processes.
+- Retry policies and dead-letter queues prevent transient failures from
+  silently losing work.
+- Stateless workers can be scaled horizontally without changing the job model.
+- Queue and project metrics expose throughput, latency, failures, and worker
+  activity for operational visibility.
+
+## Repository Structure
+
+```text
+packages/shared/       Shared types, enums, and validation schemas
+backend/shared/        Database, Redis, logging, and repository infrastructure
+backend/api/           Express REST API and request middleware
+backend/scheduler/     Delayed and recurring job scheduling
+backend/worker/        Job claiming, execution, and worker heartbeats
+frontend/              React and Vite dashboard
+database/              SQL migrations and development seed data
+tests/                 Unit and integration tests
+docs/                  Database and architecture documentation
 ```
 
-### Step 2 — Copy the environment file
-
-**Windows PowerShell:**
-```powershell
-Copy-Item .env.example .env
-```
-
-**Mac / Linux / Git Bash:**
-```bash
-cp .env.example .env
-```
-
-### Step 3 — Install all dependencies
-
-Run in this **exact order** (shared packages must be built before dependents):
-
-**Windows PowerShell:**
-```powershell
-# 1. Shared types package
-npm install --install-links --prefix packages/shared
-
-# 2. Build it first (so other packages can reference its dist/)
-npm run build --prefix packages/shared
-
-# 3. Backend infrastructure package
-npm install --install-links --prefix backend/shared
-npm run build --prefix backend/shared
-
-# 4. Install all three backend services
-npm install --install-links --prefix backend/api
-npm install --install-links --prefix backend/scheduler
-npm install --install-links --prefix backend/worker
-
-# 5. Install the frontend
-npm install --install-links --prefix frontend
-
-# 6. Install test dependencies
-npm install --install-links --prefix tests
-```
-
-**Or run everything with one command:**
-```powershell
-npm run install:all
-```
-
----
-
-## Starting Everything
-
-You need **5 separate terminal windows** running at the same time.
-
-> **Choose ONE of the two PostgreSQL options below depending on your setup.**
-
----
-
-### Option A — Using Docker PostgreSQL + Docker Redis (Recommended)
-
-> Use this if you **do NOT have PostgreSQL installed locally**,
-> or if you stopped your local PostgreSQL service.
-
-**Terminal 1 — Start PostgreSQL and Redis via Docker:**
-```powershell
-cd "d:\Job Scheduler"
-docker-compose up -d postgres redis
-```
-
-Wait 15 seconds, then verify both are healthy:
-```powershell
-docker-compose ps
-```
-You should see `js_postgres (healthy)` and `js_redis (healthy)`.
-
-**Load the database schema (first time only):**
-```powershell
-docker exec -i js_postgres psql -U postgres -d job_scheduler `
-  -f /docker-entrypoint-initdb.d/001_initial_schema.sql
-```
-
-**Load dev seed data (optional):**
-```powershell
-docker exec -i js_postgres psql -U postgres -d job_scheduler `
-  -f /docker-entrypoint-initdb.d/001_dev_seed.sql
-```
-
----
-
-### Option B — Using Local PostgreSQL 17 + Docker Redis
-
-> Use this if you have **PostgreSQL 17 installed locally** (which is the case on this machine).
-> Your local PostgreSQL is already running on port 5432.
-
-**Step 1 — Find your local postgres password**
-
-Open PowerShell and run:
-```powershell
-& "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres -p 5432
-```
-It will prompt for a password. Try the password you set during installation.
-
-**Step 2 — Create the database**
-
-Once connected, run:
-```sql
-CREATE DATABASE job_scheduler;
-\q
-```
-
-**Step 3 — Run the schema migration**
-```powershell
-& "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres -d job_scheduler `
-  -f "D:\Job Scheduler\database\migrations\001_initial_schema.sql"
-```
-
-**Step 4 — Load dev seed data (optional)**
-```powershell
-& "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres -d job_scheduler `
-  -f "D:\Job Scheduler\database\seeds\001_dev_seed.sql"
-```
-
-**Step 5 — Update your .env file with your actual password**
-
-Open `d:\Job Scheduler\.env` and set:
-```
-DB_PASSWORD=YOUR_ACTUAL_POSTGRES_PASSWORD
-DATABASE_URL=postgresql://postgres:YOUR_ACTUAL_POSTGRES_PASSWORD@localhost:5432/job_scheduler
-```
-
-**Step 6 — Start Docker Redis only:**
-```powershell
-cd "d:\Job Scheduler"
-docker-compose up -d redis
-```
-
----
-
-### Terminal 2 — Start the API Server
-
-```powershell
-cd "d:\Job Scheduler\backend\api"
-
-$env:NODE_ENV="development"
-$env:DATABASE_URL="postgresql://postgres:YOUR_POSTGRES_PASSWORD@localhost:5432/job_scheduler"
-$env:REDIS_URL="redis://localhost:6379"
-$env:JWT_SECRET="dev-secret-key-change-this-in-production-32chars"
-$env:API_PORT="3000"
-$env:CORS_ORIGINS="http://localhost:5173"
-
-npm run dev
-```
-
-**Expected output:**
-```
-[INFO] ts-node-dev ver. 2.0.0
-[INFO] PostgreSQL connection verified
-[INFO] Redis connected
-[INFO] API service listening on http://0.0.0.0:3000
-```
-
----
-
-### Terminal 3 — Start the Scheduler
-
-```powershell
-cd "d:\Job Scheduler\backend\scheduler"
-
-$env:NODE_ENV="development"
-$env:DATABASE_URL="postgresql://postgres:YOUR_POSTGRES_PASSWORD@localhost:5432/job_scheduler"
-$env:REDIS_URL="redis://localhost:6379"
-$env:SCHEDULER_POLL_INTERVAL_MS="5000"
-$env:SCHEDULER_CRON_INTERVAL_MS="60000"
-
-npm run dev
-```
-
-**Expected output:**
-```
-[INFO] ts-node-dev ver. 2.0.0
-[INFO] Scheduler service starting...
-[INFO] PostgreSQL connection verified
-[INFO] Redis connected
-[INFO] Scheduler service running
-```
-
----
-
-### Terminal 4 — Start the Worker
-
-```powershell
-cd "d:\Job Scheduler\backend\worker"
-
-$env:NODE_ENV="development"
-$env:DATABASE_URL="postgresql://postgres:YOUR_POSTGRES_PASSWORD@localhost:5432/job_scheduler"
-$env:REDIS_URL="redis://localhost:6379"
-$env:WORKER_CONCURRENCY="5"
-$env:WORKER_HEARTBEAT_INTERVAL_MS="10000"
-$env:WORKER_POLL_INTERVAL_MS="1000"
-
-npm run dev
-```
-
-**Expected output:**
-```
-[INFO] ts-node-dev ver. 2.0.0
-[INFO] Worker service starting...
-[INFO] Host: LAPTOP-LLQBEMTR | PID: XXXXX | Concurrency: 5
-[INFO] PostgreSQL connection verified
-[INFO] Redis connected
-[INFO] Worker service running
-```
-
----
-
-### Terminal 5 — Start the Frontend
-
-```powershell
-cd "d:\Job Scheduler\frontend"
-
-$env:VITE_API_URL="http://localhost:3000/api/v1"
-
-npm run dev
-```
-
-**Expected output:**
-```
-  VITE v5.x  ready in 300ms
-
-  ➜  Local:   http://localhost:5173/
-  ➜  Network: http://192.168.x.x:5173/
-```
-
-Open your browser at: **http://localhost:5173**
-
----
-
-## Verify It Works
-
-After all terminals show their "ready" messages, run these checks:
-
-### Check API health
-```powershell
-Invoke-WebRequest -Uri "http://localhost:3000/api/v1/health" | Select-Object -ExpandProperty Content
-```
-**Expected:** `{"status":"ok","timestamp":"2026-..."}`
-
-### Check auth is working (should return 401)
-```powershell
-Invoke-WebRequest -Uri "http://localhost:3000/api/v1/queues" -ErrorAction SilentlyContinue | Select-Object StatusCode
-```
-**Expected:** `401` (auth middleware is working correctly)
-
-### Check frontend is served
-Open **http://localhost:5173** in Chrome/Edge.
-You should see: **"Distributed Job Scheduler — Dashboard coming soon"**
-
-### Quick ports summary
-
-| Service | URL / Port | Status indicator |
-|---|---|---|
-| PostgreSQL | `localhost:5432` | Terminal 1 or local service |
-| Redis | `localhost:6379` | Terminal 1 (Docker) |
-| API | http://localhost:3000 | Terminal 2 |
-| Scheduler | (no HTTP, background) | Terminal 3 |
-| Worker | (no HTTP, background) | Terminal 4 |
-| Frontend | http://localhost:5173 | Terminal 5 |
-
----
-
-## Stopping Everything
-
-### Stop all services (Ctrl+C in each terminal)
-Press `Ctrl + C` in Terminals 2, 3, 4, and 5.
-
-### Stop Docker containers
-```powershell
-cd "d:\Job Scheduler"
-docker-compose down
-```
-
-### Stop and remove all Docker data (full reset)
-```powershell
-docker-compose down -v
-```
-> **Warning:** `-v` deletes the PostgreSQL volume. All data will be lost.
-
----
-
-## Running Tests
-
-```powershell
-cd "d:\Job Scheduler\tests"
-npx vitest run --reporter=verbose
-```
-
-**Expected output:**
-```
- ✓ shared/enums.test.ts > Shared enums > JobStatus has all expected values
- ✓ shared/enums.test.ts > Shared enums > QueueStatus has expected values
- ✓ shared/enums.test.ts > Shared enums > WorkerStatus has expected values
- ✓ api/health.test.ts > GET /api/v1/health > returns 200 with status ok
- ✓ api/health.test.ts > Route and auth behaviour > returns 401 for ...
- ✓ api/health.test.ts > Route and auth behaviour > returns 404 for ...
-
- Test Files  2 passed (2)
-      Tests  6 passed (6)
-```
-
-### Watch mode (auto-rerun on file change)
-```powershell
-npx vitest --reporter=verbose
-```
-
-### Coverage report
-```powershell
-npx vitest run --coverage
-```
-
----
-
-## Building for Production
-
-Build all packages in order:
-
-```powershell
-cd "d:\Job Scheduler"
-
-# Build in dependency order
-npm run build --prefix packages/shared
-npm run build --prefix backend/shared
-npm run build --prefix backend/api
-npm run build --prefix backend/scheduler
-npm run build --prefix backend/worker
-npm run build --prefix frontend
-```
-
-Or with the convenience script:
-```powershell
-npm run build:all
-```
-
-### Start production builds
-
-```powershell
-# API
-cd "d:\Job Scheduler\backend\api"
-node dist/index.js
-
-# Scheduler
-cd "d:\Job Scheduler\backend\scheduler"
-node dist/index.js
-
-# Worker
-cd "d:\Job Scheduler\backend\worker"
-node dist/index.js
-```
-
-Frontend production output is in `frontend/dist/` — serve with nginx or any static host.
-
----
-
-## Environment Variables
-
-All variables are documented in `.env.example`. Key ones:
-
-| Variable | Default | Description |
-|---|---|---|
-| `DATABASE_URL` | `postgresql://postgres:password@localhost:5432/job_scheduler` | Full PostgreSQL connection string |
-| `DB_PASSWORD` | `password` | PostgreSQL password |
-| `REDIS_URL` | `redis://localhost:6379` | Redis connection string |
-| `JWT_SECRET` | *(must set)* | Min 32 chars. **Change in production.** |
-| `API_PORT` | `3000` | Port the API listens on |
-| `CORS_ORIGINS` | `http://localhost:5173` | Allowed frontend origins |
-| `WORKER_CONCURRENCY` | `5` | Max concurrent jobs per worker process |
-| `WORKER_HEARTBEAT_INTERVAL_MS` | `10000` | How often worker pings DB (ms) |
-| `WORKER_POLL_INTERVAL_MS` | `1000` | How often worker checks for new jobs (ms) |
-| `WORKER_DRAIN_TIMEOUT_MS` | `30000` | Max wait on shutdown for jobs to finish |
-| `SCHEDULER_POLL_INTERVAL_MS` | `5000` | How often delayed jobs are promoted (ms) |
-| `SCHEDULER_CRON_INTERVAL_MS` | `60000` | How often cron definitions are checked (ms) |
-| `VITE_API_URL` | `http://localhost:3000/api/v1` | API base URL used by the frontend |
-
----
-
-## Troubleshooting
-
-### ❌ `auth_failed` — PostgreSQL password wrong
-
-**Cause:** Your local PostgreSQL 17 has a different password than what's in `DATABASE_URL`.
-
-**Fix:**
-```powershell
-# Find your password — run this and enter the password you set during PostgreSQL installation
-& "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres
-
-# Once connected, reset it to 'password':
-ALTER USER postgres WITH PASSWORD 'password';
-\q
-```
-
-Then your current `.env` will work as-is.
-
----
-
-### ❌ `ECONNREFUSED` on port 6379 — Redis not running
-
-**Fix — start Docker Redis:**
-```powershell
-cd "d:\Job Scheduler"
-docker-compose up -d redis
-```
-
-**Or install Redis for Windows:**
-Download from https://github.com/tporadowski/redis/releases
-
----
-
-### ❌ npm install fails with `symlink` error on Windows
-
-**Cause:** npm workspaces create symlinks, Windows blocks them without Developer Mode.
-
-**Fix:** Always install with `--install-links`:
-```powershell
-npm install --install-links --prefix packages/shared
-```
-The `.npmrc` file already sets `install-links=true` for all installs in this project.
-
----
-
-### ❌ `Cannot find module` when running a service
-
-The shared packages (`packages/shared`, `backend/shared`) need to be **built** before services can import them.
-
-**Fix:**
-```powershell
-npm run build --prefix packages/shared
-npm run build --prefix backend/shared
-```
-
----
-
-### ❌ Port 5432 already in use by local PostgreSQL
-
-You have two options:
-
-**Option 1 — Stop local PostgreSQL so Docker can use port 5432:**
-```powershell
-# Run as Administrator
-Stop-Service -Name "postgresql-x64-17"
-```
-
-**Option 2 — Use local PostgreSQL and skip Docker for the DB:**
-Update `.env`:
-```
-DATABASE_URL=postgresql://postgres:YOUR_LOCAL_PASSWORD@localhost:5432/job_scheduler
-```
-And only start Docker Redis: `docker-compose up -d redis`
-
----
-
-### ❌ Docker Desktop won't start
-
-Start it manually from the Start menu and wait for **"Engine running"** status.
-The Docker icon in the taskbar should stop animating.
-
----
-
-### ❌ Frontend shows blank page
-
-Check the browser console (F12). Most likely cause: the API is not running.
-Make sure Terminal 2 (API) shows "listening on http://0.0.0.0:3000" before opening the frontend.
-
----
-
-## API Quick Reference
-
-Base URL: `http://localhost:3000/api/v1`
-
-All routes except `/health` require: `Authorization: Bearer <jwt>` or `x-api-key: <key>`
-
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/health` | Health check (no auth needed) |
-| `POST` | `/auth/register` | Create a new user account |
-| `POST` | `/auth/login` | Login and get JWT token |
-| `POST` | `/auth/logout` | Logout |
-| `POST` | `/orgs` | Create an organization |
-| `GET` | `/orgs/:orgId` | Get organization details |
-| `GET` | `/orgs/:orgId/members` | List org members |
-| `POST` | `/projects` | Create a project |
-| `GET` | `/projects/:projectId` | Get project details |
-| `POST` | `/queues` | Create a queue |
-| `GET` | `/queues/:queueId` | Get queue details |
-| `PATCH` | `/queues/:queueId` | Update queue config |
-| `DELETE` | `/queues/:queueId` | Delete a queue |
-| `POST` | `/queues/:queueId/pause` | Pause a queue |
-| `POST` | `/queues/:queueId/resume` | Resume a paused queue |
-| `POST` | `/queues/:queueId/jobs` | Submit a job (immediate / delayed / cron / batch) |
-| `GET` | `/queues/:queueId/jobs` | List jobs (paginated, filterable by status) |
-| `GET` | `/queues/:queueId/dlq` | List dead-letter jobs |
-| `POST` | `/queues/:queueId/dlq/requeue` | Re-queue all dead-letter jobs |
-| `GET` | `/queues/:queueId/metrics` | Queue throughput and latency metrics |
-| `POST` | `/queues/:queueId/recurring` | Create a recurring cron job |
-| `GET` | `/queues/:queueId/recurring` | List recurring job definitions |
-| `GET` | `/jobs/:jobId` | Get job detail |
-| `DELETE` | `/jobs/:jobId` | Cancel a job |
-| `POST` | `/jobs/:jobId/retry` | Manually retry a failed/dead job |
-| `GET` | `/jobs/:jobId/logs` | Stream execution logs for a job |
-| `GET` | `/workers/:workerId` | Get worker detail and current jobs |
-| `GET` | `/metrics` | Project-level aggregate metrics |
-
-### Test a quick API call
-
-```powershell
-# Health check (no token needed)
-Invoke-WebRequest http://localhost:3000/api/v1/health | Select-Object -ExpandProperty Content
-
-# Submit a job (requires auth token — available after /auth/login is implemented)
-$headers = @{ "Authorization" = "Bearer YOUR_JWT_TOKEN"; "Content-Type" = "application/json" }
-$body = '{"name":"test-job","type":"immediate","payload":{"task":"hello"}}'
-Invoke-WebRequest -Uri "http://localhost:3000/api/v1/queues/QUEUE_ID/jobs" `
-  -Method POST -Headers $headers -Body $body | Select-Object -ExpandProperty Content
-```
-
----
-
-## Architecture Summary
-
-```
-Browser (React)
-      │  HTTP REST
-      ▼
-  API Service (Express, port 3000)
-      │ pg Pool │ ioredis
-      ▼         ▼
- PostgreSQL    Redis
-  (truth)   (locks + pub/sub)
-      ▲
-      │ pg Pool
-  ┌───┴────────────┐
-Scheduler        Worker(s)
-(leader-elected) (stateless, scalable)
-```
-
-- **PostgreSQL** — single source of truth for all jobs, queues, workers
-- **Redis** — scheduler leader election (Redlock) + real-time dashboard events (pub/sub)
-- **Atomic claiming** — `SELECT ... FOR UPDATE SKIP LOCKED` prevents duplicate job execution
-- **Workers** — stateless; scale by running more instances: `--scale worker=3`
+## Technology
+
+- **TypeScript** for shared contracts and service implementation
+- **Node.js and Express** for the API and backend services
+- **PostgreSQL** for durable relational state
+- **Redis** for distributed locks and event publication
+- **React and Vite** for the dashboard
+- **Docker Compose** for local infrastructure and service orchestration
+- **Vitest** for automated testing
+
+## Further Documentation
+
+For local setup and execution instructions, see [Run.md](Run.md). Database
+details are documented in [docs/database.md](docs/database.md).
