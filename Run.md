@@ -116,7 +116,7 @@ Apply all 5 SQL migrations in chronological order:
 ```powershell
 psql -U postgres -d job_scheduler -f "d:\Job Scheduler\database\migrations\001_initial_schema.sql"
 psql -U postgres -d job_scheduler -f "d:\Job Scheduler\database\migrations\002_complete_schema.sql"
-psql -U postgres -d job_scheduler -f "d:\Job Scheduler\database\migrations\003_add_dlq_system.sql"
+psql -U postgres -d job_scheduler -f "d:\Job Scheduler\database\migrations\003_dlq_enhancements.sql"
 psql -U postgres -d job_scheduler -f "d:\Job Scheduler\database\migrations\004_worker_heartbeat_states.sql"
 psql -U postgres -d job_scheduler -f "d:\Job Scheduler\database\migrations\005_fix_batch_counts_trigger.sql"
 ```
@@ -129,7 +129,7 @@ const { Pool } = require('pg');
 const fs = require('fs');
 const pool = new Pool({ host: 'localhost', port: 5432, user: 'postgres', password: 'password', database: 'job_scheduler' });
 async function run() {
-  for (const f of ['001_initial_schema.sql','002_complete_schema.sql','003_add_dlq_system.sql','004_worker_heartbeat_states.sql','005_fix_batch_counts_trigger.sql']) {
+  for (const f of ['001_initial_schema.sql','002_complete_schema.sql','003_dlq_enhancements.sql','004_worker_heartbeat_states.sql','005_fix_batch_counts_trigger.sql']) {
     const sql = fs.readFileSync('../../database/migrations/' + f, 'utf8');
     await pool.query(sql);
     console.log('Applied migration: ' + f);

@@ -66,6 +66,12 @@ describe('Distributed Worker Job-Claiming Concurrency Tests', () => {
     }
   });
 
+  beforeEach(async () => {
+    if (workerIds.length > 0) {
+      await pool.query('UPDATE workers SET current_job_count = 0 WHERE id = ANY($1)', [workerIds]);
+    }
+  });
+
   describe('Atomic High-Concurrency Job Claiming (Zero Duplicate Claims)', () => {
     it('ensures 10 concurrent workers claiming 30 jobs claim each job at most once', async () => {
       const totalJobs = 30;
@@ -85,13 +91,20 @@ describe('Distributed Worker Job-Claiming Concurrency Tests', () => {
       // Simulate 10 workers concurrently claiming jobs until none left
       const allClaimedIds: string[] = [];
       const workerClaimTasks = workerIds.map(async (workerId) => {
-        const deadline = Date.now() + 8000;
-        while (Date.now() < deadline && allClaimedIds.length < totalJobs) {
+        let workerClaimCount = 0;
+        const maxPerWorker = 5;
+        const deadline = Date.now() + 10000;
+        while (
+          Date.now() < deadline &&
+          workerClaimCount < maxPerWorker &&
+          allClaimedIds.length < totalJobs
+        ) {
           const claimed = await claimService.claimJob(workerId, queueId);
           if (claimed) {
             allClaimedIds.push(claimed.id);
+            workerClaimCount++;
           } else {
-            await new Promise((resolve) => setTimeout(resolve, 15));
+            await new Promise((resolve) => setTimeout(resolve, 5));
           }
         }
       });

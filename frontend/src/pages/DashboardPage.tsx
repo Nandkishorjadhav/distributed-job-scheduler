@@ -95,13 +95,13 @@ export const DashboardPage: React.FC = () => {
 
   const queueDepths = metrics?.queueDepths || [];
 
-  // Latency chart mock data from percentiles
+  // Latency chart data from true percentiles
   const latencyData = [
-    { name: 'Min', duration: executionDuration.minDurationMs || 10 },
-    { name: 'p50', duration: executionDuration.p50DurationMs || 45 },
-    { name: 'Avg', duration: executionDuration.avgDurationMs || 60 },
-    { name: 'p95', duration: executionDuration.p95DurationMs || 120 },
-    { name: 'p99', duration: executionDuration.p99DurationMs || 250 },
+    { name: 'Min', duration: Math.round(executionDuration.minDurationMs || 0) },
+    { name: 'p50', duration: Math.round(executionDuration.p50DurationMs || 0) },
+    { name: 'Avg', duration: Math.round(executionDuration.avgDurationMs || 0) },
+    { name: 'p95', duration: Math.round(executionDuration.p95DurationMs || 0) },
+    { name: 'p99', duration: Math.round(executionDuration.p99DurationMs || 0) },
   ];
 
   return (

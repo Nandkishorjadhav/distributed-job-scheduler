@@ -45,7 +45,7 @@ export class UserRepository {
     const query = `
       SELECT id, email, password_hash, name, is_active, last_login_at, created_at, updated_at
       FROM users
-      WHERE email = $1 AND is_active = TRUE
+      WHERE email = $1
     `;
     const result = await this.pool.query(query, [email.toLowerCase().trim()]);
     if (result.rows.length === 0) return null;
