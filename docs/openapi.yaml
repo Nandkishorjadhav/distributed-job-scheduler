@@ -1,0 +1,872 @@
+openapi: 3.0.3
+info:
+  title: Distributed Job Scheduler REST API
+  version: 1.0.0
+  description: >
+    High-performance, fault-tolerant distributed job scheduler REST API supporting
+    immediate, delayed, scheduled, recurring cron, and batch jobs with atomic locking,
+    retry policies, dead-letter queues, and worker heartbeat telemetry.
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local Development Server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Standard JWT Bearer token authentication in Authorization header
+
+  schemas:
+    StandardSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operation completed successfully
+        data:
+          type: object
+        requestId:
+          type: string
+          format: uuid
+      required:
+        - success
+
+    StandardErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Invalid input parameter
+        code:
+          type: string
+          example: VALIDATION_ERROR
+        details:
+          type: array
+          items:
+            type: object
+        requestId:
+          type: string
+          format: uuid
+      required:
+        - success
+        - error
+
+    PaginationMetadata:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 100
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        totalPages:
+          type: integer
+          example: 5
+      required:
+        - total
+        - page
+        - pageSize
+        - totalPages
+
+paths:
+  /health:
+    get:
+      summary: Health Check
+      description: Returns system health, version, uptime, and database/redis status.
+      responses:
+        '200':
+          description: System is healthy
+
+  /status:
+    get:
+      summary: System Status & Telemetry
+      description: Returns runtime memory, uptime, process PID, and API catalog.
+      responses:
+        '200':
+          description: System status telemetry
+
+  /auth/register:
+    post:
+      summary: Register New User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                name:
+                  type: string
+              required:
+                - email
+                - password
+                - name
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Validation failed
+        '409':
+          description: Email already exists
+
+  /auth/login:
+    post:
+      summary: Authenticate User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Login successful, JWT token returned
+        '401':
+          description: Invalid credentials
+
+  /auth/me:
+    get:
+      summary: Get Current Authenticated User
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile and organization memberships
+        '401':
+          description: Unauthorized
+
+  /auth/logout:
+    post:
+      summary: Logout User
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+
+  /orgs:
+    post:
+      summary: Create Organization
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                slug:
+                  type: string
+              required:
+                - name
+                - slug
+      responses:
+        '201':
+          description: Organization created
+
+  /orgs/{orgId}:
+    get:
+      summary: Get Organization Details
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Organization details
+
+  /projects:
+    get:
+      summary: List Projects
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Paginated list of projects
+    post:
+      summary: Create Project
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                organizationId:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                slug:
+                  type: string
+                description:
+                  type: string
+              required:
+                - organizationId
+                - name
+                - slug
+      responses:
+        '201':
+          description: Project created
+
+  /projects/{projectId}:
+    get:
+      summary: Get Project
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Project details
+    delete:
+      summary: Safe Delete Project
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Project deleted safely
+
+  /queues:
+    get:
+      summary: List Queues
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Paginated list of queues
+    post:
+      summary: Create Queue
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                projectId:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                priority:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 5
+                concurrencyLimit:
+                  type: integer
+                  default: 10
+                dlqEnabled:
+                  type: boolean
+                  default: true
+              required:
+                - projectId
+                - name
+      responses:
+        '201':
+          description: Queue created
+
+  /queues/{queueId}/pause:
+    post:
+      summary: Pause Queue
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: queueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Queue paused
+
+  /queues/{queueId}/resume:
+    post:
+      summary: Resume Queue
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: queueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Queue resumed
+
+  /queues/{queueId}/stats:
+    get:
+      summary: Get Queue Statistics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: queueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Live queue counters
+
+  /queues/{queueId}/jobs:
+    get:
+      summary: List Jobs in Queue
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: queueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Paginated list of jobs
+    post:
+      summary: Submit Job to Queue
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: queueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                type:
+                  type: string
+                  enum: [immediate, delayed, scheduled]
+                payload:
+                  type: object
+                priority:
+                  type: integer
+                  default: 5
+                scheduledAt:
+                  type: string
+                  format: date-time
+              required:
+                - name
+      responses:
+        '201':
+          description: Job submitted
+
+  /queues/{queueId}/batch:
+    post:
+      summary: Submit Batch Jobs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: queueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                jobs:
+                  type: array
+                  items:
+                    type: object
+              required:
+                - name
+                - jobs
+      responses:
+        '201':
+          description: Batch group submitted
+
+  /queues/{queueId}/recurring:
+    post:
+      summary: Create Recurring Cron Schedule
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: queueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                cronExpression:
+                  type: string
+                timezone:
+                  type: string
+                  default: UTC
+                payloadTemplate:
+                  type: object
+              required:
+                - name
+                - cronExpression
+      responses:
+        '201':
+          description: Recurring cron created
+
+  /jobs/{jobId}:
+    get:
+      summary: Get Job Details
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job details
+
+  /jobs/{jobId}/cancel:
+    post:
+      summary: Cancel Job
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job cancelled
+
+  /jobs/{jobId}/retry:
+    post:
+      summary: Retry Failed Job
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job re-enqueued
+
+  /jobs/{jobId}/executions:
+    get:
+      summary: Get Job Execution Attempt History
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of execution attempts
+
+  /jobs/{jobId}/logs:
+    get:
+      summary: Get Job Execution Logs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [debug, info, warn, error]
+      responses:
+        '200':
+          description: List of log lines
+
+  /jobs/{jobId}/history:
+    get:
+      summary: Get Complete Job History Audit Trail
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job details + executions + logs
+
+  /dlq:
+    get:
+      summary: List Dead Letter Queue Jobs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: queueId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [unhandled, retried, archived]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Paginated DLQ list
+
+  /dlq/stats:
+    get:
+      summary: Get DLQ Statistics & Error Breakdown
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: DLQ dashboard statistics
+
+  /dlq/{dlqId}:
+    get:
+      summary: Inspect DLQ Job
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: dlqId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: DLQ snapshot + executions + logs
+    delete:
+      summary: Delete DLQ Job
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: dlqId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: DLQ job permanently deleted
+
+  /dlq/{dlqId}/retry:
+    post:
+      summary: Re-queue DLQ Job
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: dlqId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job re-queued successfully
+
+  /dlq/{dlqId}/archive:
+    post:
+      summary: Archive DLQ Job
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: dlqId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job marked as archived
+
+  /workers:
+    get:
+      summary: List Workers with Health Telemetry
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of workers
+
+  /workers/register:
+    post:
+      summary: Register Worker Process
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                projectId:
+                  type: string
+                  format: uuid
+                hostname:
+                  type: string
+                pid:
+                  type: integer
+                maxConcurrency:
+                  type: integer
+                  default: 5
+              required:
+                - projectId
+                - hostname
+                - pid
+      responses:
+        '201':
+          description: Worker registered
+
+  /workers/{workerId}/heartbeat:
+    post:
+      summary: Submit Worker Heartbeat
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: workerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentJobCount:
+                  type: integer
+                metadata:
+                  type: object
+      responses:
+        '200':
+          description: Heartbeat updated
+
+  /workers/{workerId}:
+    get:
+      summary: Get Worker Details & Assigned Running Jobs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: workerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Worker details + running jobs + heartbeats
+
+  /workers/{workerId}/stop:
+    post:
+      summary: Stop Worker Process
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: workerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Worker marked as stopped
+
+  /workers/stale/scan:
+    post:
+      summary: Scan Stale Workers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: timeoutSeconds
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        '200':
+          description: Stale workers scanned and marked unhealthy

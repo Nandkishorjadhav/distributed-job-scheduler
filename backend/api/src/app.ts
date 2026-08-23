@@ -4,6 +4,9 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
+import fs from 'fs';
+import path from 'path';
+import { requestIdMiddleware } from './middleware/requestId';
 import { rateLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
@@ -12,12 +15,20 @@ import { router } from './routes';
 export function createApp(): Application {
   const app = express();
 
+  // ─── Request correlation ID (must be first) ──────────────────────────────
+  app.use(requestIdMiddleware);
+
   // ─── Security & utility middleware ────────────────────────────────────────
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: false, // Allows CDN-based API docs
+    })
+  );
   app.use(
     cors({
       origin: (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(','),
       credentials: true,
+      exposedHeaders: ['X-Request-Id'],
     })
   );
   app.use(compression());
@@ -29,8 +40,65 @@ export function createApp(): Application {
   // ─── Rate limiting ────────────────────────────────────────────────────────
   app.use('/api/', rateLimiter);
 
+  // ─── OpenAPI Spec Endpoint ────────────────────────────────────────────────
+  let openApiSpec: Record<string, unknown> | null = null;
+  const specPath = path.resolve(__dirname, 'openapi.json');
+  if (fs.existsSync(specPath)) {
+    try {
+      openApiSpec = JSON.parse(fs.readFileSync(specPath, 'utf8'));
+    } catch {
+      openApiSpec = null;
+    }
+  }
+
+  app.get('/api/v1/openapi.json', (_req: Request, res: Response) => {
+    if (openApiSpec) {
+      res.json(openApiSpec);
+    } else {
+      res.status(404).json({ success: false, error: 'OpenAPI specification not found' });
+    }
+  });
+
+  // ─── Interactive API Documentation UI ────────────────────────────────────
+  app.get('/api/v1/docs', (_req: Request, res: Response) => {
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Distributed Job Scheduler — API Reference</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css" />
+  <style>
+    body { margin: 0; background: #0f172a; }
+    .swagger-ui .topbar { display: none; }
+    .swagger-ui { color: #f8fafc; }
+  </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js"></script>
+  <script>
+    window.onload = () => {
+      window.ui = SwaggerUIBundle({
+        url: '/api/v1/openapi.json',
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIBundle.SwaggerUIStandalonePreset
+        ],
+        layout: "BaseLayout"
+      });
+    };
+  </script>
+</body>
+</html>`;
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+  });
+
   // ─── Health check (no auth required) ─────────────────────────────────────
-  app.get('/api/v1/health', (_req: Request, res: Response) => {
+  app.get('/api/v1/health', (req: Request, res: Response) => {
     res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -42,11 +110,12 @@ export function createApp(): Application {
         database: 'connected',
         redis: 'connected',
       },
+      requestId: req.id,
     });
   });
 
   // ─── Status endpoint — full system info ──────────────────────────────────
-  app.get('/api/v1/status', (_req: Request, res: Response) => {
+  app.get('/api/v1/status', (req: Request, res: Response) => {
     const mem = process.memoryUsage();
     res.json({
       api: {
@@ -62,33 +131,50 @@ export function createApp(): Application {
         heap_total_mb: Math.round(mem.heapTotal / 1024 / 1024),
         rss_mb: Math.round(mem.rss / 1024 / 1024),
       },
+      docs_url: '/api/v1/docs',
+      openapi_spec: '/api/v1/openapi.json',
       endpoints: [
-        { method: 'GET',    path: '/api/v1/health',                   auth: false, status: 'live' },
-        { method: 'GET',    path: '/api/v1/status',                   auth: false, status: 'live' },
-        { method: 'POST',   path: '/api/v1/auth/register',            auth: false, status: 'stub' },
-        { method: 'POST',   path: '/api/v1/auth/login',               auth: false, status: 'stub' },
-        { method: 'POST',   path: '/api/v1/auth/logout',              auth: true,  status: 'stub' },
-        { method: 'POST',   path: '/api/v1/orgs',                     auth: true,  status: 'stub' },
-        { method: 'GET',    path: '/api/v1/orgs/:orgId',              auth: true,  status: 'stub' },
-        { method: 'POST',   path: '/api/v1/projects',                 auth: true,  status: 'stub' },
-        { method: 'GET',    path: '/api/v1/projects/:projectId',      auth: true,  status: 'stub' },
-        { method: 'POST',   path: '/api/v1/queues',                   auth: true,  status: 'stub' },
-        { method: 'GET',    path: '/api/v1/queues/:queueId',          auth: true,  status: 'stub' },
-        { method: 'PATCH',  path: '/api/v1/queues/:queueId',          auth: true,  status: 'stub' },
-        { method: 'DELETE', path: '/api/v1/queues/:queueId',          auth: true,  status: 'stub' },
-        { method: 'POST',   path: '/api/v1/queues/:queueId/pause',    auth: true,  status: 'stub' },
-        { method: 'POST',   path: '/api/v1/queues/:queueId/resume',   auth: true,  status: 'stub' },
-        { method: 'POST',   path: '/api/v1/queues/:queueId/jobs',     auth: true,  status: 'stub' },
-        { method: 'GET',    path: '/api/v1/queues/:queueId/jobs',     auth: true,  status: 'stub' },
-        { method: 'GET',    path: '/api/v1/queues/:queueId/dlq',      auth: true,  status: 'stub' },
-        { method: 'POST',   path: '/api/v1/queues/:queueId/recurring',auth: true,  status: 'stub' },
-        { method: 'GET',    path: '/api/v1/jobs/:jobId',              auth: true,  status: 'stub' },
-        { method: 'DELETE', path: '/api/v1/jobs/:jobId',              auth: true,  status: 'stub' },
-        { method: 'POST',   path: '/api/v1/jobs/:jobId/retry',        auth: true,  status: 'stub' },
-        { method: 'GET',    path: '/api/v1/jobs/:jobId/logs',         auth: true,  status: 'stub' },
-        { method: 'GET',    path: '/api/v1/workers/:workerId',        auth: true,  status: 'stub' },
-        { method: 'GET',    path: '/api/v1/metrics',                  auth: true,  status: 'stub' },
+        { method: 'POST', path: '/api/v1/auth/register', auth: false, status: 'live' },
+        { method: 'POST', path: '/api/v1/auth/login', auth: false, status: 'live' },
+        { method: 'GET', path: '/api/v1/auth/me', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/auth/logout', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/orgs', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/orgs', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/projects', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/projects', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/queues', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/queues', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/queues/:id/pause', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/queues/:id/resume', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/queues/:id/stats', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/jobs', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/queues/:id/jobs', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/queues/:id/batch', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/jobs/:id', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/jobs/:id/cancel', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/jobs/:id/retry', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/jobs/:id/executions', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/jobs/:id/logs', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/jobs/:id/history', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/workers', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/workers/register', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/workers/:id/heartbeat', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/workers/:id/stop', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/workers/stale/scan', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/dlq', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/dlq/stats', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/dlq/:id', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/dlq/:id/retry', auth: true, status: 'live' },
+        { method: 'POST', path: '/api/v1/dlq/:id/archive', auth: true, status: 'live' },
+        { method: 'DELETE', path: '/api/v1/dlq/:id', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/metrics', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/metrics/prometheus', auth: true, status: 'live' },
+        { method: 'GET', path: '/api/v1/health', auth: false, status: 'live' },
+        { method: 'GET', path: '/api/v1/status', auth: false, status: 'live' },
+        { method: 'GET', path: '/api/v1/openapi.json', auth: false, status: 'live' },
+        { method: 'GET', path: '/api/v1/docs', auth: false, status: 'live' },
       ],
+      requestId: req.id,
       timestamp: new Date().toISOString(),
     });
   });

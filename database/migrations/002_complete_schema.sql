@@ -910,19 +910,12 @@ BEGIN
         WHERE id = NEW.batch_group_id;
 
     ELSIF TG_OP = 'UPDATE' AND OLD.status <> NEW.status THEN
-        -- Decrement old status bucket
         UPDATE batch_groups SET
-            pending_count   = pending_count   - CASE WHEN OLD.status = 'pending'   THEN 1 ELSE 0 END,
-            running_count   = running_count   - CASE WHEN OLD.status = 'running'   THEN 1 ELSE 0 END,
-            completed_count = completed_count - CASE WHEN OLD.status = 'completed' THEN 1 ELSE 0 END,
-            failed_count    = failed_count    - CASE WHEN OLD.status = 'failed'    THEN 1 ELSE 0 END,
-            dead_count      = dead_count      - CASE WHEN OLD.status = 'dead'      THEN 1 ELSE 0 END,
-            -- Increment new status bucket
-            pending_count   = pending_count   + CASE WHEN NEW.status = 'pending'   THEN 1 ELSE 0 END,
-            running_count   = running_count   + CASE WHEN NEW.status = 'running'   THEN 1 ELSE 0 END,
-            completed_count = completed_count + CASE WHEN NEW.status = 'completed' THEN 1 ELSE 0 END,
-            failed_count    = failed_count    + CASE WHEN NEW.status = 'failed'    THEN 1 ELSE 0 END,
-            dead_count      = dead_count      + CASE WHEN NEW.status = 'dead'      THEN 1 ELSE 0 END
+            pending_count   = pending_count   - (CASE WHEN OLD.status = 'pending'   THEN 1 ELSE 0 END) + (CASE WHEN NEW.status = 'pending'   THEN 1 ELSE 0 END),
+            running_count   = running_count   - (CASE WHEN OLD.status = 'running'   THEN 1 ELSE 0 END) + (CASE WHEN NEW.status = 'running'   THEN 1 ELSE 0 END),
+            completed_count = completed_count - (CASE WHEN OLD.status = 'completed' THEN 1 ELSE 0 END) + (CASE WHEN NEW.status = 'completed' THEN 1 ELSE 0 END),
+            failed_count    = failed_count    - (CASE WHEN OLD.status = 'failed'    THEN 1 ELSE 0 END) + (CASE WHEN NEW.status = 'failed'    THEN 1 ELSE 0 END),
+            dead_count      = dead_count      - (CASE WHEN OLD.status = 'dead'      THEN 1 ELSE 0 END) + (CASE WHEN NEW.status = 'dead'      THEN 1 ELSE 0 END)
         WHERE id = NEW.batch_group_id;
     END IF;
     RETURN NEW;

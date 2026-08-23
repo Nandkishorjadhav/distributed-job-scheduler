@@ -87,44 +87,32 @@ export const LoginSchema = z.object({
 
 // ─── Organization & Project Schemas ──────────────────────────────────────────
 
+export const SlugSchema = z
+  .string()
+  .min(2, 'Slug must be at least 2 characters')
+  .max(64)
+  .regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, 'Slug must start and end with an alphanumeric character and contain only lowercase letters, numbers, and hyphens');
+
 export const CreateOrgSchema = z.object({
   name: z.string().min(1).max(128),
-  slug: z
-    .string()
-    .min(1)
-    .max(64)
-    .regex(/^[a-z0-9-]+$/),
+  slug: SlugSchema,
 });
 
 export const UpdateOrgSchema = z.object({
   name: z.string().min(1).max(128).optional(),
-  slug: z
-    .string()
-    .min(1)
-    .max(64)
-    .regex(/^[a-z0-9-]+$/)
-    .optional(),
+  slug: SlugSchema.optional(),
 });
 
 export const CreateProjectSchema = z.object({
   organizationId: z.string().uuid(),
   name: z.string().min(1).max(128),
-  slug: z
-    .string()
-    .min(1)
-    .max(64)
-    .regex(/^[a-z0-9-]+$/),
+  slug: SlugSchema,
   description: z.string().max(1024).optional(),
 });
 
 export const UpdateProjectSchema = z.object({
   name: z.string().min(1).max(128).optional(),
-  slug: z
-    .string()
-    .min(1)
-    .max(64)
-    .regex(/^[a-z0-9-]+$/)
-    .optional(),
+  slug: SlugSchema.optional(),
   description: z.string().max(1024).optional(),
 });
 

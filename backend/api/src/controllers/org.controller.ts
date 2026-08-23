@@ -31,7 +31,10 @@ export async function createOrg(
       success: true,
       data: { organization },
     });
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.code === '23503') {
+      return next(new AppError(401, 'Session user does not exist in database. Please log in again.', 'SESSION_INVALID'));
+    }
     next(err);
   }
 }

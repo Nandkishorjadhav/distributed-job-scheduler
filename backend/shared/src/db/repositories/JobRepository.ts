@@ -131,10 +131,10 @@ export class JobRepository {
       jobType,
       initialStatus,
       JSON.stringify(data.payload ?? {}),
-      data.priority ?? 5,
+      data.priority && !isNaN(Number(data.priority)) ? Number(data.priority) : 5,
       scheduledAtDate,
-      data.maxAttempts ?? 3,
-      data.timeoutMs ?? null,
+      data.maxAttempts && !isNaN(Number(data.maxAttempts)) ? Number(data.maxAttempts) : 3,
+      data.timeoutMs ? Number(data.timeoutMs) : null,
       data.batchGroupId ?? null,
       data.scheduledJobId ?? null,
     ];

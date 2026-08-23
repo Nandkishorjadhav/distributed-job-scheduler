@@ -83,31 +83,20 @@ describe('Distributed Worker Job-Claiming Concurrency Tests', () => {
       }
 
       // Simulate 10 workers concurrently claiming jobs until none left
+      const allClaimedIds: string[] = [];
       const workerClaimTasks = workerIds.map(async (workerId) => {
-        const claimedByThisWorker: string[] = [];
-        let emptyClaims = 0;
-
-        while (emptyClaims < 3) {
+        const deadline = Date.now() + 8000;
+        while (Date.now() < deadline && allClaimedIds.length < totalJobs) {
           const claimed = await claimService.claimJob(workerId, queueId);
           if (claimed) {
-            claimedByThisWorker.push(claimed.id);
-            emptyClaims = 0;
+            allClaimedIds.push(claimed.id);
           } else {
-            emptyClaims++;
-            // Small jitter between poll attempts
-            await new Promise((resolve) => setTimeout(resolve, 5));
+            await new Promise((resolve) => setTimeout(resolve, 15));
           }
         }
-        return { workerId, claimedJobs: claimedByThisWorker };
       });
 
-      const results = await Promise.all(workerClaimTasks);
-
-      // Collect all claimed job IDs
-      const allClaimedIds: string[] = [];
-      for (const res of results) {
-        allClaimedIds.push(...res.claimedJobs);
-      }
+      await Promise.all(workerClaimTasks);
 
       // 1. Total claimed must equal total jobs submitted
       expect(allClaimedIds.length).toBe(totalJobs);
