@@ -1,23 +1,42 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
+import { CreateJobDirectSchema, JobFilterSchema } from '@job-scheduler/shared';
+import { validate, validateQuery } from '../middleware/validate';
+import {
+  createJob,
+  getJob,
+  listJobs,
+  cancelJob,
+  retryJob,
+  getExecutionHistory,
+  getJobLogs,
+  getJobHistory,
+} from '../controllers/job.controller';
 
 export const jobsRouter = Router();
 
-// GET /api/v1/jobs/:jobId
-jobsRouter.get('/:jobId', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// POST /api/v1/jobs — Create a job directly specifying queueId
+jobsRouter.post('/', validate(CreateJobDirectSchema), createJob);
 
-// DELETE /api/v1/jobs/:jobId
-jobsRouter.delete('/:jobId', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// GET /api/v1/jobs — List jobs across user's organizations with filters & pagination
+jobsRouter.get('/', validateQuery(JobFilterSchema), listJobs);
 
-// POST /api/v1/jobs/:jobId/retry
-jobsRouter.post('/:jobId/retry', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// GET /api/v1/jobs/:jobId — Get job details
+jobsRouter.get('/:jobId', getJob);
 
-// GET /api/v1/jobs/:jobId/logs
-jobsRouter.get('/:jobId/logs', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// POST /api/v1/jobs/:jobId/cancel — Cancel job
+jobsRouter.post('/:jobId/cancel', cancelJob);
+
+// DELETE /api/v1/jobs/:jobId — Cancel job (alias)
+jobsRouter.delete('/:jobId', cancelJob);
+
+// POST /api/v1/jobs/:jobId/retry — Retry failed or dead job
+jobsRouter.post('/:jobId/retry', retryJob);
+
+// GET /api/v1/jobs/:jobId/executions — Get execution history attempts
+jobsRouter.get('/:jobId/executions', getExecutionHistory);
+
+// GET /api/v1/jobs/:jobId/logs — Get execution logs
+jobsRouter.get('/:jobId/logs', getJobLogs);
+
+// GET /api/v1/jobs/:jobId/history — Get full job history (details + executions + logs)
+jobsRouter.get('/:jobId/history', getJobHistory);

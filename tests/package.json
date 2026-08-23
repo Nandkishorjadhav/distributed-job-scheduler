@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@job-scheduler/shared": "file:../packages/shared",
+    "@job-scheduler/backend-shared": "file:../backend/shared",
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {

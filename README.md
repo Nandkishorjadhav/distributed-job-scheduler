@@ -119,5 +119,8 @@ docs/                  Database and architecture documentation
 
 ## Further Documentation
 
-For local setup and execution instructions, see [Run.md](Run.md). Database
-details are documented in [docs/database.md](docs/database.md).
+- **Local Setup & Run Guide**: [Run.md](Run.md)
+- **Worker Service Guide**: [backend/worker/README.md](backend/worker/README.md)
+- **Job Claiming & Concurrency Architecture**: [docs/job_claiming.md](docs/job_claiming.md)
+- **Database Schema & Migrations**: [docs/database.md](docs/database.md)
+
