@@ -3,6 +3,7 @@ import { JobResponse } from '../db/repositories/JobRepository';
 import { JobStatus, JobType, RetryStrategy } from '@job-scheduler/shared';
 import { assertStateTransition } from '../domain/JobStateMachine';
 import { RetryPolicyCalculator, RetryPolicyConfig } from '../domain/RetryPolicyCalculator';
+import { logger } from '../logger';
 
 export class JobClaimService {
   constructor(private readonly pool: Pool) {}
@@ -66,6 +67,18 @@ export class JobClaimService {
         limit,
         workerId,
       ]);
+
+      if (result.rows.length > 0) {
+        for (const row of result.rows) {
+          logger.info('Job claimed by worker', {
+            workerId,
+            jobId: row.id,
+            queueId: row.queue_id,
+            priority: row.priority,
+            attemptNumber: row.attempt_count,
+          });
+        }
+      }
 
       await client.query('COMMIT');
       return result.rows.map((row) => this.mapToJobResponse(row));
@@ -158,6 +171,14 @@ export class JobClaimService {
         `,
         [jobId]
       );
+
+      logger.info('Job completed successfully', {
+        workerId,
+        jobId,
+        queueId: finishedJob.queue_id,
+        durationMs: finishedAt.getTime() - startedAt.getTime(),
+        attemptNumber: finishedJob.attempt_count,
+      });
 
       await client.query('COMMIT');
       return this.mapToJobResponse(finishedJob);
@@ -358,6 +379,27 @@ export class JobClaimService {
           }),
         ]
       );
+
+      if (isRetryAllowed) {
+        logger.warn('Job execution failed — scheduled for retry', {
+          workerId,
+          jobId,
+          queueId: failedJob.queue_id,
+          attemptNumber: attemptCount,
+          retryDelayMs: computedDelayMs,
+          nextAttemptAt: nextAttemptAtDate,
+          errorCode: error.code ?? 'JOB_EXECUTION_FAILED',
+        });
+      } else {
+        logger.error('Job permanently failed — moved to DLQ', {
+          workerId,
+          jobId,
+          queueId: failedJob.queue_id,
+          totalAttempts: attemptCount,
+          reason: error.message,
+          errorCode: error.code ?? 'JOB_EXECUTION_FAILED',
+        });
+      }
 
       await client.query('COMMIT');
       return this.mapToJobResponse(failedJob);

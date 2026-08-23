@@ -3,7 +3,7 @@
 export { getPool, closePool } from './db/client';
 export { getRedisClient, closeRedis } from './redis/client';
 export { getRedlock, tryAcquireLock } from './redis/locks';
-export { logger } from './logger';
+export { logger, StructuredLogContext } from './logger';
 
 // Domain
 export { isValidStateTransition, assertStateTransition } from './domain/JobStateMachine';
@@ -35,7 +35,11 @@ export {
 export { OrgRepository, OrgResponse } from './db/repositories/OrgRepository';
 export { ProjectRepository, ProjectResponse } from './db/repositories/ProjectRepository';
 export { UserRepository, UserResponse } from './db/repositories/UserRepository';
-export { MetricsRepository } from './db/repositories/MetricsRepository';
+export {
+  MetricsRepository,
+  SystemMetricsResponse,
+  MetricsFilter,
+} from './db/repositories/MetricsRepository';
 export {
   RetryPolicyRepository,
   RetryPolicyEntity,

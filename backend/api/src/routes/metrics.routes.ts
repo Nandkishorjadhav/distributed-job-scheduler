@@ -1,8 +1,17 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
+import {
+  getSystemMetrics,
+  getQueueMetrics,
+  getPrometheusMetrics,
+} from '../controllers/metrics.controller';
 
 export const metricsRouter = Router();
 
-// GET /api/v1/metrics  (project-level, query param: ?projectId=)
-metricsRouter.get('/', (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, error: 'Not implemented' });
-});
+// GET /api/v1/metrics — Retrieve aggregate system or project metrics
+metricsRouter.get('/', getSystemMetrics);
+
+// GET /api/v1/metrics/prometheus — Prometheus text format metrics export
+metricsRouter.get('/prometheus', getPrometheusMetrics);
+
+// GET /api/v1/metrics/queues/:queueId — Queue-specific metrics
+metricsRouter.get('/queues/:queueId', getQueueMetrics);

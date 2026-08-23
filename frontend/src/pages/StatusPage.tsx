@@ -185,8 +185,8 @@ export function StatusPage() {
       )}
 
       {/* ── Endpoint list ──────────────────────── */}
-      {status && (
-        <Card title={`API Endpoints (${status.endpoints.length} total)`}>
+      {status && status.endpoints && (
+        <Card title={`API Endpoints (${(status.endpoints || []).length} total)`}>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -198,7 +198,7 @@ export function StatusPage() {
                 </tr>
               </thead>
               <tbody>
-                {status.endpoints.map((ep, i) => (
+                {(status.endpoints || []).map((ep, i) => (
                   <tr key={i} className="border-b border-gray-800/50 hover:bg-gray-800/30">
                     <td className="py-1.5 pr-4">
                       <Badge text={ep.method} color={methodColor(ep.method)} />

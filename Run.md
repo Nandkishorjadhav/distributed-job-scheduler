@@ -1,751 +1,451 @@
-# 🚀 Distributed Job Scheduler
+# Distributed Job Scheduler — Complete Execution & Operations Runbook (`run.md`)
 
-A production-inspired distributed job scheduling platform designed to reliably execute asynchronous background jobs across multiple workers.
-
-The project demonstrates backend engineering concepts including:
-
-* REST API design
-* PostgreSQL database management
-* Redis-based coordination
-* Distributed job scheduling
-* Worker processes
-* Concurrency
-* Job queues
-* Authentication
-* Reliability and fault tolerance
-* Full-stack integration
-* Automated testing
+This guide provides the complete set of commands and environment configurations needed to run, scale, test, and manage all features of the **Distributed Job Scheduler** platform.
 
 ---
 
-## 🏗️ Architecture
+## 1. System Architecture Overview
 
-```text
-                    ┌─────────────────────┐
-                    │      Frontend       │
-                    │   React + Vite      │
-                    │   Port: 5173        │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │       API Server    │
-                    │    Node.js/Express  │
-                    │      Port: 3000     │
-                    └───────┬───────┬─────┘
-                            │       │
-                ┌───────────┘       └────────────┐
-                ▼                                ▼
-       ┌─────────────────┐              ┌─────────────────┐
-       │   PostgreSQL    │              │      Redis      │
-       │   Port: 5432    │              │    Port: 6379   │
-       └────────┬────────┘              └────────┬────────┘
-                │                                │
-                └──────────────┬─────────────────┘
-                               │
-                ┌──────────────┴──────────────┐
-                │                             │
-                ▼                             ▼
-       ┌─────────────────┐           ┌─────────────────┐
-       │    Scheduler    │           │     Workers     │
-       │  Polls for Jobs │           │ Execute Jobs    │
-       └─────────────────┘           └─────────────────┘
+The system consists of four primary runtime components:
+
+```
+                           ┌─────────────────────────────────────────┐
+                           │   React Operations Dashboard (Vite UI)  │
+                           │         http://localhost:5173           │
+                           └────────────────────┬────────────────────┘
+                                                │ REST API (X-Request-Id)
+                                                ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                              Express REST API Gateway                                  │
+│                      http://localhost:3000 · OpenAPI 3.0.3 Spec                        │
+└───────────────────┬─────────────────────────────────────────────────┬──────────────────┘
+                    │                                                 │
+                    ▼                                                 ▼
+┌───────────────────────────────────────┐         ┌───────────────────────────────────────┐
+│        Scheduler Service Engine       │         │        Distributed Worker Engine      │
+│  - Delayed Job Promotion              │         │  - Atomic Job Claiming (SKIP LOCKED)  │
+│  - Scheduled Time Triggers            │         │  - Handler Execution & Heartbeats     │
+│  - Recurring Cron Parser              │         │  - Exponential Backoff & DLQ Movement │
+└───────────────────┬───────────────────┘         └───────────────────┬───────────────────┘
+                    │                                                 │
+                    ▼                                                 ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        PostgreSQL 17 Primary Database Cluster                          │
+│                Relational State, Row-Level Locks, Time-Series Heartbeats               │
+└────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-# 📋 Prerequisites
+## 2. Prerequisites & Environment Requirements
 
-Make sure the following are installed before starting:
+| Dependency | Minimum Version | Default Port | Description |
+| :--- | :--- | :--- | :--- |
+| **Node.js** | `v20.0.0+` (LTS) | — | JavaScript/TypeScript runtime |
+| **npm** | `v10.0.0+` | — | Package manager & monorepo orchestration |
+| **PostgreSQL**| `v16.0+` (17 recommended)| `5432` | Relational storage & row-level locking (`SKIP LOCKED`) |
+| **Redis** *(Optional)* | `v7.0+` | `6379` | Fast caching & distributed pub/sub |
+| **Docker** *(Optional)*| `v24.0+` | — | Containerized multi-service deployment |
 
-* [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-* Node.js
-* npm
-* Git
-* PowerShell
+---
 
-Verify Node.js and npm:
+## 3. Environment Configuration (`.env`)
 
-```powershell
-node --version
-npm --version
-```
+A default `.env` file is located at the project root. You can customize the variables below as needed:
 
-Verify Docker:
+```bash
+# Node Environment
+NODE_ENV=development
 
-```powershell
-docker --version
-docker-compose --version
+# Database Configuration (PostgreSQL)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=job_scheduler
+DB_USER=postgres
+DB_PASSWORD=password
+DB_POOL_MIN=2
+DB_POOL_MAX=20
+
+# Redis Cache & Pub/Sub
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+
+# Backend REST API
+API_PORT=3000
+API_HOST=0.0.0.0
+CORS_ORIGIN=http://localhost:5173
+
+# JWT Authentication
+JWT_SECRET=dev_secret_key_change_in_production_at_least_32_chars_long
+JWT_EXPIRES_IN=7d
+BCRYPT_ROUNDS=12
+
+# Scheduler Engine
+SCHEDULER_POLL_INTERVAL_MS=1000
+SCHEDULER_BATCH_SIZE=100
+
+# Worker Service
+WORKER_CONCURRENCY=5
+WORKER_POLL_INTERVAL_MS=500
+WORKER_HEARTBEAT_INTERVAL_MS=5000
+WORKER_STALE_THRESHOLD_SECONDS=30
+
+# Observability & Structured Logging
+LOG_LEVEL=info
+ENABLE_CORRELATION_LOGGING=true
+
+# Frontend Dashboard
+VITE_API_URL=http://localhost:3000/api/v1
 ```
 
 ---
 
-# 🚀 Getting Started
+## 4. Database Setup & Applying Migrations
 
-Follow the steps below to start the complete project.
+Make sure your PostgreSQL instance is running on `localhost:5432`. Create the database if it doesn't already exist:
 
----
-
-## 🐳 Step 1 — Start Docker Desktop
-
-Open **Docker Desktop** from the Windows Start menu.
-
-Wait until Docker shows:
-
-```text
-Engine running
+```sql
+CREATE DATABASE job_scheduler;
 ```
 
-Once Docker is running, open a new PowerShell terminal.
+Apply all 5 SQL migrations in chronological order:
 
----
-
-## 🗄️ Step 2 — Start PostgreSQL and Redis
-
-Open **Terminal 1**.
-
-Navigate to the project directory:
-
+### Option A: Using PostgreSQL Client (`psql`)
 ```powershell
-cd "d:\Job Scheduler"
+psql -U postgres -d job_scheduler -f "d:\Job Scheduler\database\migrations\001_initial_schema.sql"
+psql -U postgres -d job_scheduler -f "d:\Job Scheduler\database\migrations\002_complete_schema.sql"
+psql -U postgres -d job_scheduler -f "d:\Job Scheduler\database\migrations\003_add_dlq_system.sql"
+psql -U postgres -d job_scheduler -f "d:\Job Scheduler\database\migrations\004_worker_heartbeat_states.sql"
+psql -U postgres -d job_scheduler -f "d:\Job Scheduler\database\migrations\005_fix_batch_counts_trigger.sql"
 ```
 
-Start PostgreSQL and Redis:
-
+### Option B: Using Node Script
 ```powershell
-docker-compose up -d postgres redis
-```
-
-Wait approximately 10–15 seconds.
-
-Then verify the containers:
-
-```powershell
-docker-compose ps
-```
-
-You should see containers similar to:
-
-```text
-js_postgres
-js_redis
-```
-
-Both services should show a healthy/running status.
-
----
-
-# 🗄️ Step 3 — Initialize the Database
-
-### First-time setup
-
-If PostgreSQL was created fresh, the database initialization script should run automatically because the migration is mounted into:
-
-```text
-/docker-entrypoint-initdb.d/
-```
-
-The schema file is:
-
-```text
-001_initial_schema.sql
-```
-
-If you need to manually execute the schema, run:
-
-```powershell
-docker exec -i js_postgres psql -U postgres -d job_scheduler -f /docker-entrypoint-initdb.d/001_initial_schema.sql
-```
-
-You can verify that PostgreSQL is working with:
-
-```powershell
-docker exec js_postgres psql -U postgres -d job_scheduler -c "\copy (SELECT 1) TO STDOUT"
-```
-
-> **Note:** You normally do not need to run the migration manually when PostgreSQL is started for the first time with Docker Compose.
-
----
-
-# ⚙️ Step 4 — Configure Environment Variables
-
-For the first setup, copy the example environment file:
-
-```powershell
-cd "d:\Job Scheduler"
-```
-
-```powershell
-Copy-Item .env.example .env
-```
-
-You can modify `.env` later if required.
-
----
-
-# 🚀 Step 5 — Start the API Server
-
-Open **Terminal 2**.
-
-Navigate to the API directory:
-
-```powershell
-cd "d:\Job Scheduler\backend\api"
-```
-
-Set the development environment variables:
-
-```powershell
-$env:NODE_ENV="development"
-$env:DATABASE_URL="postgresql://postgres:password@localhost:5432/job_scheduler"
-$env:REDIS_URL="redis://localhost:6379"
-$env:JWT_SECRET="dev-secret-key-change-this-in-production-32chars"
-$env:API_PORT="3000"
-$env:CORS_ORIGINS="http://localhost:5173"
-```
-
-Start the API:
-
-```powershell
-npm run dev
-```
-
-Expected output:
-
-```text
-[INFO] PostgreSQL connection verified
-[INFO] Redis connected
-[INFO] API service listening on http://0.0.0.0:3000
-```
-
----
-
-## 🩺 Test the API
-
-Open another terminal and run:
-
-```powershell
-curl http://localhost:3000/api/v1/health
-```
-
-Expected response:
-
-```json
-{
-  "status": "ok",
-  "timestamp": "..."
+cd "d:\Job Scheduler\backend\shared"
+node -e "
+const { Pool } = require('pg');
+const fs = require('fs');
+const pool = new Pool({ host: 'localhost', port: 5432, user: 'postgres', password: 'password', database: 'job_scheduler' });
+async function run() {
+  for (const f of ['001_initial_schema.sql','002_complete_schema.sql','003_add_dlq_system.sql','004_worker_heartbeat_states.sql','005_fix_batch_counts_trigger.sql']) {
+    const sql = fs.readFileSync('../../database/migrations/' + f, 'utf8');
+    await pool.query(sql);
+    console.log('Applied migration: ' + f);
+  }
+  pool.end();
 }
-```
-
-If you receive this response, the API is running successfully.
-
----
-
-# 📅 Step 6 — Start the Scheduler
-
-Open **Terminal 3**.
-
-Navigate to the scheduler:
-
-```powershell
-cd "d:\Job Scheduler\backend\scheduler"
-```
-
-Set the environment variables:
-
-```powershell
-$env:NODE_ENV="development"
-$env:DATABASE_URL="postgresql://postgres:password@localhost:5432/job_scheduler"
-$env:REDIS_URL="redis://localhost:6379"
-$env:SCHEDULER_POLL_INTERVAL_MS="5000"
-$env:SCHEDULER_CRON_INTERVAL_MS="60000"
-```
-
-Start the scheduler:
-
-```powershell
-npm run dev
-```
-
-Expected output:
-
-```text
-[INFO] Scheduler service starting...
-[INFO] PostgreSQL connection verified
-[INFO] Redis connected
-[INFO] Scheduler service running (stubs — business logic pending)
-```
-
-> **Note:** The scheduler currently contains stub business logic. Actual job scheduling functionality can be implemented on top of this service.
-
----
-
-# 👷 Step 7 — Start the Worker
-
-Open **Terminal 4**.
-
-Navigate to the worker:
-
-```powershell
-cd "d:\Job Scheduler\backend\worker"
-```
-
-Set the environment variables:
-
-```powershell
-$env:NODE_ENV="development"
-$env:DATABASE_URL="postgresql://postgres:password@localhost:5432/job_scheduler"
-$env:REDIS_URL="redis://localhost:6379"
-$env:WORKER_CONCURRENCY="5"
-$env:WORKER_HEARTBEAT_INTERVAL_MS="10000"
-$env:WORKER_POLL_INTERVAL_MS="1000"
-```
-
-Start the worker:
-
-```powershell
-npm run dev
-```
-
-Expected output:
-
-```text
-[INFO] Worker service starting...
-[INFO] Host: <hostname> | PID: <pid> | Concurrency: 5
-[INFO] PostgreSQL connection verified
-[INFO] Redis connected
-[INFO] Worker service running (stubs — business logic pending)
-```
-
-### Worker Configuration
-
-| Variable                       |   Value | Purpose                   |
-| ------------------------------ | ------: | ------------------------- |
-| `WORKER_CONCURRENCY`           |     `5` | Maximum concurrent jobs   |
-| `WORKER_HEARTBEAT_INTERVAL_MS` | `10000` | Worker heartbeat interval |
-| `WORKER_POLL_INTERVAL_MS`      |  `1000` | Job polling interval      |
-
----
-
-# 🌐 Step 8 — Start the Frontend
-
-Open **Terminal 5**.
-
-Navigate to the frontend:
-
-```powershell
-cd "d:\Job Scheduler\frontend"
-```
-
-Set the API URL:
-
-```powershell
-$env:VITE_API_URL="http://localhost:3000/api/v1"
-```
-
-Start the frontend:
-
-```powershell
-npm run dev
-```
-
-Expected output:
-
-```text
-VITE v5.x.x ready in 300ms
-
-➜ Local:   http://localhost:5173/
-➜ Network: http://192.168.x.x:5173/
-```
-
-Open the application in your browser:
-
-**http://localhost:5173**
-
-You should see the:
-
-```text
-Distributed Job Scheduler
-```
-
-frontend application.
-
----
-
-# 🧪 Step 9 — Run Tests
-
-Open **Terminal 6**.
-
-Navigate to the tests directory:
-
-```powershell
-cd "d:\Job Scheduler\tests"
-```
-
-Run the test suite:
-
-```powershell
-npx vitest run --reporter=verbose
-```
-
-Expected output:
-
-```text
-✓ shared/enums.test.ts
-  ✓ JobStatus has all expected values
-
-✓ shared/enums.test.ts
-  ✓ QueueStatus has expected values
-
-✓ shared/enums.test.ts
-  ✓ WorkerStatus has expected values
-
-✓ api/health.test.ts
-  ✓ GET /api/v1/health returns 200 with status ok
-
-✓ api/health.test.ts
-  ✓ Route and auth behaviour returns 401
-
-✓ api/health.test.ts
-  ✓ Route and auth behaviour returns 404
-
-Test Files  2 passed
-Tests       6 passed
+run();"
 ```
 
 ---
 
-# 🔌 Ports
+## 5. Quick Start: Running Services Locally
 
-| Service    | Port / URL              | Started By |
-| ---------- | ----------------------- | ---------- |
-| PostgreSQL | `localhost:5432`        | Docker     |
-| Redis      | `localhost:6379`        | Docker     |
-| API Server | `http://localhost:3000` | Terminal 2 |
-| Scheduler  | No HTTP port            | Terminal 3 |
-| Worker     | No HTTP port            | Terminal 4 |
-| Frontend   | `http://localhost:5173` | Terminal 5 |
+Open **4 separate PowerShell terminals** in `d:\Job Scheduler`:
 
----
-
-# 🔗 API Endpoints
-
-## Health Check
-
-```http
-GET /api/v1/health
-```
-
-PowerShell:
-
-```powershell
-curl http://localhost:3000/api/v1/health
-```
-
-Expected:
-
-```json
-{
-  "status": "ok",
-  "timestamp": "..."
-}
-```
-
----
-
-## Login
-
-```http
-POST /api/v1/auth/login
-```
-
-Example:
-
-```powershell
-curl -X POST http://localhost:3000/api/v1/auth/login `
-  -H "Content-Type: application/json" `
-  -d '{"email":"test@test.com","password":"pass"}'
-```
-
-> Currently returns `501 Not Implemented` because authentication business logic is still a stub.
-
----
-
-## Protected Queue Route
-
-```http
-GET /api/v1/queues
-```
-
-Example:
-
-```powershell
-curl http://localhost:3000/api/v1/queues
-```
-
-Without an authentication token, the expected response is:
-
-```text
-401 Unauthorized
-```
-
-This confirms that the authentication middleware is working.
-
----
-
-# 🛑 Stopping the Project
-
-Stop the frontend, API, scheduler, and worker by pressing:
-
-```text
-Ctrl + C
-```
-
-in their respective terminals.
-
-Stop PostgreSQL and Redis:
-
+### Terminal 1: Backend REST API Gateway
 ```powershell
 cd "d:\Job Scheduler"
+npm run dev --prefix backend/api
+```
+- **Listening on**: [http://localhost:3000](http://localhost:3000)
+- **Interactive Swagger UI**: [http://localhost:3000/api/v1/docs](http://localhost:3000/api/v1/docs)
+- **OpenAPI 3.0.3 Spec**: [http://localhost:3000/api/v1/openapi.json](http://localhost:3000/api/v1/openapi.json)
+
+---
+
+### Terminal 2: Distributed Scheduler Engine
+```powershell
+cd "d:\Job Scheduler"
+npm run dev --prefix backend/scheduler
+```
+- Automatically promotes delayed jobs (`DELAYED` $\rightarrow$ `QUEUED`), triggers scheduled executions, and parses recurring cron expressions.
+
+---
+
+### Terminal 3: Distributed Worker Node
+```powershell
+cd "d:\Job Scheduler"
+npm run dev --prefix backend/worker
+```
+- Registers worker node in database (`ONLINE`), polls eligible queues using `SELECT ... FOR UPDATE SKIP LOCKED`, executes job handlers, records heartbeats, and triggers exponential backoff retries or DLQ movements.
+
+---
+
+### Terminal 4: React Operations Dashboard
+```powershell
+cd "d:\Job Scheduler"
+npm run dev --prefix frontend
+```
+- **Dashboard Web UI**: [http://localhost:5173](http://localhost:5173)
+
+---
+
+## 6. Running with Docker Compose
+
+To spin up the entire cluster (PostgreSQL, Redis, API, Scheduler, Worker, and React Dashboard) inside Docker:
+
+```powershell
+# 1. Start all containers in the background
+docker-compose up --build -d
+
+# 2. Scale Worker nodes horizontally to 4 concurrent worker processes
+docker-compose up --scale worker=4 -d
+
+# 3. View live cluster logs
+docker-compose logs -f
+
+# 4. Stop and tear down cluster
 docker-compose down
 ```
 
 ---
 
-# 🔄 Restarting the Project
+## 7. Running the Automated Test Suite
 
-After the initial setup, you normally only need to:
-
-### 1. Start Docker
+To run all **129 tests across all 15 test suites**:
 
 ```powershell
-docker-compose up -d postgres redis
+cd "d:\Job Scheduler\tests"
+npx vitest run --reporter=verbose
 ```
 
-### 2. Start API
+### Verified Test Suites:
+1. `shared/enums.test.ts` — Enum integrity and mapping tests
+2. `api/health.test.ts` — API health check and route authentication guards
+3. `api/auth.test.ts` — User registration, login, JWT validation, and RBAC
+4. `api/orgs_projects.test.ts` — Multi-tenant organization and project management
+5. `api/queues.test.ts` — Queue CRUD, priority, concurrency limits, and pause/resume
+6. `api/jobs.test.ts` — Job domain model, batch dispatching, and state transitions
+7. `concurrency/job_claiming.test.ts` — Atomic `SELECT FOR UPDATE SKIP LOCKED` verification
+8. `worker/worker_lifecycle.test.ts` — Worker registration, heartbeats, and graceful draining
+9. `domain/retry_policy.test.ts` — Fixed, linear, and exponential backoff calculations
+10. `integration/retry_lifecycle.test.ts` — End-to-end failure backoff to DLQ progression
+11. `api/dlq.test.ts` — Dead letter queue quarantine, inspect, retry, archive, and delete
+12. `scheduler/scheduler.test.ts` — Delayed, scheduled, recurring cron, and overlap avoidance
+13. `api/workers.test.ts` — Worker heartbeat monitoring, states, and stale detection
+14. `api/api_standards.test.ts` — `X-Request-Id` correlation, OpenAPI spec, and error formats
+15. `api/metrics_observability.test.ts` — Real-time telemetry, percentiles, and Prometheus export
 
+---
+
+## 8. Feature Walkthrough & API Verification Commands
+
+### 1. Authentication (`/api/v1/auth`)
+
+#### Register a New User:
 ```powershell
-cd "d:\Job Scheduler\backend\api"
-npm run dev
+curl -X POST http://localhost:3000/api/v1/auth/register `
+  -H "Content-Type: application/json" `
+  -d '{"name": "Dev Admin", "email": "admin@example.com", "password": "Password123!"}'
 ```
 
-### 3. Start Scheduler
-
+#### Log In:
 ```powershell
-cd "d:\Job Scheduler\backend\scheduler"
-npm run dev
-```
+$res = Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/v1/auth/login" `
+  -ContentType "application/json" `
+  -Body '{"email": "admin@example.com", "password": "Password123!"}'
 
-### 4. Start Worker
-
-```powershell
-cd "d:\Job Scheduler\backend\worker"
-npm run dev
-```
-
-### 5. Start Frontend
-
-```powershell
-cd "d:\Job Scheduler\frontend"
-npm run dev
+$TOKEN = $res.data.token
+Write-Host "JWT Token: $TOKEN"
 ```
 
 ---
 
-# 🧩 Troubleshooting
+### 2. Organizations & Projects (`/api/v1/orgs`, `/api/v1/projects`)
 
-## Docker is not running
-
-If you see an error such as:
-
-```text
-Cannot connect to the Docker daemon
-```
-
-Open Docker Desktop and wait until:
-
-```text
-Engine running
-```
-
-Then retry:
-
+#### Create Organization:
 ```powershell
-docker-compose up -d postgres redis
+$org = Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/v1/orgs" `
+  -Headers @{ Authorization = "Bearer $TOKEN" } `
+  -ContentType "application/json" `
+  -Body '{"name": "Acme Corp", "slug": "acme-corp"}'
+
+$ORG_ID = $org.data.organization.id
+```
+
+#### Create Project:
+```powershell
+$proj = Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/v1/projects" `
+  -Headers @{ Authorization = "Bearer $TOKEN" } `
+  -ContentType "application/json" `
+  -Body (@{ organizationId = $ORG_ID; name = "Payments System"; slug = "payments" } | ConvertTo-Json)
+
+$PROJ_ID = $proj.data.project.id
 ```
 
 ---
 
-## PostgreSQL connection failed
+### 3. Queues Management (`/api/v1/queues`)
 
-Check the PostgreSQL container:
-
+#### Create a Queue with Exponential Backoff Retry Policy:
 ```powershell
-docker-compose ps
+$queueBody = @{
+  projectId = $PROJ_ID
+  name = "payouts-queue"
+  priority = 8
+  concurrencyLimit = 10
+  dlqEnabled = $true
+  retryPolicy = @{
+    strategy = "exponential"
+    maxAttempts = 3
+    initialDelayMs = 1000
+    maxDelayMs = 30000
+    jitterMs = 500
+  }
+} | ConvertTo-Json
+
+$queue = Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/v1/queues" `
+  -Headers @{ Authorization = "Bearer $TOKEN" } `
+  -ContentType "application/json" `
+  -Body $queueBody
+
+$QUEUE_ID = $queue.data.queue.id
 ```
 
-Check PostgreSQL logs:
-
+#### Pause and Resume Queue:
 ```powershell
-docker logs js_postgres
+# Pause Queue
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/v1/queues/$QUEUE_ID/pause" `
+  -Headers @{ Authorization = "Bearer $TOKEN" }
+
+# Resume Queue
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/v1/queues/$QUEUE_ID/resume" `
+  -Headers @{ Authorization = "Bearer $TOKEN" }
 ```
 
 ---
 
-## Redis connection failed
+### 4. Job Submission & Workflows (`/api/v1/queues/:id/jobs`)
 
-Check Redis:
+#### Submit Immediate Job:
+```powershell
+$jobBody = @{
+  name = "process-payout-101"
+  type = "immediate"
+  priority = 8
+  payload = @{ recipient = "user_456"; amount = 1500; currency = "USD" }
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/v1/queues/$QUEUE_ID/jobs" `
+  -Headers @{ Authorization = "Bearer $TOKEN" } `
+  -ContentType "application/json" `
+  -Body $jobBody
+```
+
+#### Submit Delayed Job (Executes in 30 Seconds):
+```powershell
+$delayTime = (Get-Date).ToUniversalTime().AddSeconds(30).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+$delayedBody = @{
+  name = "delayed-invoice-send"
+  type = "delayed"
+  scheduledAt = $delayTime
+  payload = @{ invoiceId = "INV-9988" }
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/v1/queues/$QUEUE_ID/jobs" `
+  -Headers @{ Authorization = "Bearer $TOKEN" } `
+  -ContentType "application/json" `
+  -Body $delayedBody
+```
+
+#### Submit Batch of Jobs:
+```powershell
+$batchBody = @{
+  name = "nightly-settlement-batch"
+  jobs = @(
+    @{ name = "task-1"; type = "immediate"; payload = @{ item = 1 } },
+    @{ name = "task-2"; type = "immediate"; payload = @{ item = 2 } },
+    @{ name = "task-3"; type = "immediate"; payload = @{ item = 3 } }
+  )
+} | ConvertTo-Json -Depth 5
+
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/v1/queues/$QUEUE_ID/batch" `
+  -Headers @{ Authorization = "Bearer $TOKEN" } `
+  -ContentType "application/json" `
+  -Body $batchBody
+```
+
+---
+
+### 5. Worker Telemetry & Stale Detection (`/api/v1/workers`)
+
+#### List Registered Workers with Dynamic Health Status:
+```powershell
+Invoke-RestMethod -Method Get -Uri "http://localhost:3000/api/v1/workers" `
+  -Headers @{ Authorization = "Bearer $TOKEN" }
+```
+
+#### Trigger Stale Worker Scanner:
+```powershell
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/v1/workers/stale/scan?timeoutSeconds=30" `
+  -Headers @{ Authorization = "Bearer $TOKEN" }
+```
+
+---
+
+### 6. Dead Letter Queue (`/api/v1/dlq`)
+
+#### Inspect DLQ Quarantined Jobs:
+```powershell
+Invoke-RestMethod -Method Get -Uri "http://localhost:3000/api/v1/dlq" `
+  -Headers @{ Authorization = "Bearer $TOKEN" }
+```
+
+#### Re-queue (Retry) a Dead Job:
+```powershell
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/v1/dlq/<DLQ_ID>/retry" `
+  -Headers @{ Authorization = "Bearer $TOKEN" }
+```
+
+---
+
+### 7. Observability & Metrics (`/api/v1/metrics`)
+
+#### Fetch Live JSON Telemetry (Counters, Latency Percentiles, Queue Depths):
+```powershell
+Invoke-RestMethod -Method Get -Uri "http://localhost:3000/api/v1/metrics" `
+  -Headers @{ Authorization = "Bearer $TOKEN" }
+```
+
+#### Fetch Prometheus Exposition Format:
+```powershell
+curl -X GET http://localhost:3000/api/v1/metrics/prometheus `
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+## 9. Production Compilation & Packaging
+
+To compile all packages for production deployment:
 
 ```powershell
-docker logs js_redis
-```
+cd "d:\Job Scheduler"
 
-You can also verify the container:
+# Build all monorepo packages
+npm run build:all
 
-```powershell
-docker-compose ps
-```
-
----
-
-## Port 3000 already in use
-
-Check which process is using port 3000:
-
-```powershell
-netstat -ano | findstr :3000
-```
-
-You can either stop the process or change:
-
-```powershell
-$env:API_PORT="3001"
+# Or build individual packages:
+npm run build --prefix packages/shared
+npm run build --prefix backend/shared
+npm run build --prefix backend/api
+npm run build --prefix backend/scheduler
+npm run build --prefix backend/worker
+npm run build --prefix frontend
 ```
 
 ---
 
-## Frontend cannot connect to API
+## 10. Summary of Key URLs & Ports
 
-Verify the API is running:
-
-```powershell
-curl http://localhost:3000/api/v1/health
-```
-
-Then verify:
-
-```powershell
-$env:VITE_API_URL="http://localhost:3000/api/v1"
-```
-
-Restart the frontend after changing environment variables.
-
----
-
-# 📁 Project Structure
-
-```text
-Job Scheduler/
-│
-├── backend/
-│   ├── api/
-│   │   ├── src/
-│   │   ├── package.json
-│   │   └── ...
-│   │
-│   ├── scheduler/
-│   │   ├── src/
-│   │   ├── package.json
-│   │   └── ...
-│   │
-│   └── worker/
-│       ├── src/
-│       ├── package.json
-│       └── ...
-│
-├── frontend/
-│   ├── src/
-│   ├── package.json
-│   └── ...
-│
-├── tests/
-│   ├── api/
-│   ├── shared/
-│   └── ...
-│
-├── docker-compose.yml
-├── .env.example
-├── .env
-└── README.md
-```
-
----
-
-# 🔐 Environment Variables
-
-| Variable                       | Description                        |
-| ------------------------------ | ---------------------------------- |
-| `NODE_ENV`                     | Application environment            |
-| `DATABASE_URL`                 | PostgreSQL connection URL          |
-| `REDIS_URL`                    | Redis connection URL               |
-| `JWT_SECRET`                   | Secret used for JWT authentication |
-| `API_PORT`                     | API server port                    |
-| `CORS_ORIGINS`                 | Allowed frontend origins           |
-| `SCHEDULER_POLL_INTERVAL_MS`   | Scheduler polling interval         |
-| `SCHEDULER_CRON_INTERVAL_MS`   | Scheduler cron interval            |
-| `WORKER_CONCURRENCY`           | Number of concurrent jobs          |
-| `WORKER_HEARTBEAT_INTERVAL_MS` | Worker heartbeat interval          |
-| `WORKER_POLL_INTERVAL_MS`      | Worker polling interval            |
-| `VITE_API_URL`                 | Frontend API base URL              |
-
-> ⚠️ **Never commit `.env` or production secrets to GitHub.** Use `.env.example` for safe configuration examples.
-
----
-
-# 🧪 Current Project Status
-
-| Component                 | Status               |
-| ------------------------- | -------------------- |
-| PostgreSQL                | ✅ Running            |
-| Redis                     | ✅ Running            |
-| API Server                | ✅ Running            |
-| Health API                | ✅ Implemented        |
-| Authentication Routes     | 🟡 Stub              |
-| Scheduler                 | 🟡 Stub              |
-| Worker                    | 🟡 Stub              |
-| Frontend                  | 🟡 Placeholder       |
-| Automated Tests           | ✅ Passing            |
-| Distributed Job Execution | 🚧 To be implemented |
-
----
-
-# 🎯 Future Implementation
-
-The next development phase can include:
-
-1. User registration and authentication
-2. Queue creation and management
-3. Job creation API
-4. Job priority
-5. Delayed jobs
-6. Scheduled jobs
-7. Recurring jobs
-8. Redis-based job queue
-9. Worker job claiming
-10. Concurrent job execution
-11. Job retry mechanism
-12. Exponential backoff
-13. Job timeout handling
-14. Dead-letter queues
-15. Worker heartbeats
-16. Worker failure detection
-17. Job status tracking
-18. Scheduler persistence
-19. Monitoring dashboard
-20. Production deployment
-
----
-
-# 📜 License
-
-This project is developed for educational and engineering evaluation purposes.
+| Resource | URL | Description |
+| :--- | :--- | :--- |
+| **React Dashboard** | [http://localhost:5173](http://localhost:5173) | Web operations console |
+| **REST API Server** | [http://localhost:3000/api/v1](http://localhost:3000/api/v1) | Backend API root |
+| **Interactive Swagger Docs** | [http://localhost:3000/api/v1/docs](http://localhost:3000/api/v1/docs) | Interactive API exploration |
+| **OpenAPI Specification** | [http://localhost:3000/api/v1/openapi.json](http://localhost:3000/api/v1/openapi.json) | OpenAPI 3.0.3 JSON schema |
+| **System Health Check** | [http://localhost:3000/api/v1/health](http://localhost:3000/api/v1/health) | Uptime & database status |
+| **Prometheus Metrics** | [http://localhost:3000/api/v1/metrics/prometheus](http://localhost:3000/api/v1/metrics/prometheus) | Prometheus scrape endpoint |

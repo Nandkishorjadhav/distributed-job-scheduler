@@ -76,8 +76,28 @@ limits prevent one process from consuming unlimited resources.
 4. A worker atomically claims an available job so competing workers cannot
    execute the same job at the same time.
 5. The worker records success or failure and emits relevant state changes.
-6. Failed jobs can be retried according to queue policy or moved to a
-   dead-letter queue for inspection and later reprocessing.
+6. Failed jobs can be retried according to queue policy or moved to a dead-letter queue for inspection and later reprocessing.
+
+## Role-Based Access Control (RBAC) Matrix
+
+The system implements a 4-tier hierarchy: `OWNER (4) > ADMIN (3) > MEMBER (2) > VIEWER (1)`.
+
+| Action / Capability | Minimum Required Role | Allowed Roles | Description |
+| :--- | :---: | :--- | :--- |
+| **Create Organization** | *Authenticated User* | All registered users | Any authenticated user can create an Organization and becomes its **`OWNER`**. |
+| **Delete Organization** | **`OWNER`** | `OWNER` | Permanent deletion of the tenant boundary and all child resources. |
+| **Manage Org Members** | **`ADMIN`** | `OWNER`, `ADMIN` | Invite users, remove members, or adjust member roles. |
+| **Create Project** | **`ADMIN`** | `OWNER`, `ADMIN` | Create a new project within the organization. |
+| **Delete Project** | **`ADMIN`** | `OWNER`, `ADMIN` | Delete empty projects (blocked if active queues exist). |
+| **Create Queue** | **`ADMIN`** | `OWNER`, `ADMIN` | Create new queues with priority, concurrency limits, and retry policies. |
+| **Configure Queue Settings** | **`ADMIN`** | `OWNER`, `ADMIN` | Edit concurrency limits, priority, retry backoff strategies, or DLQ toggles. |
+| **Pause / Resume Queue** | **`ADMIN`** | `OWNER`, `ADMIN` | Temporarily halt or restart job claiming on a queue. |
+| **Delete Queue** | **`ADMIN`** | `OWNER`, `ADMIN` | Safe deletion of queues with no running in-flight jobs. |
+| **Submit Job** | **`MEMBER`** | `OWNER`, `ADMIN`, `MEMBER` | Enqueue immediate, delayed, scheduled, recurring cron, or batch jobs. |
+| **Retry / Cancel Job** | **`MEMBER`** | `OWNER`, `ADMIN`, `MEMBER` | Re-queue failed/dead jobs or cancel pending/scheduled jobs. |
+| **Manage DLQ (Retry/Archive/Delete)** | **`ADMIN`** | `OWNER`, `ADMIN` | Quarantine maintenance and dead job re-queuing. |
+| **View Jobs & Execution History** | **`VIEWER`** | `OWNER`, `ADMIN`, `MEMBER`, `VIEWER` | Inspect job payloads, statuses, attempt breakdowns, and execution log streams. |
+| **View Queues & Telemetry** | **`VIEWER`** | `OWNER`, `ADMIN`, `MEMBER`, `VIEWER` | Read-only access to queue depths, worker status, and system metrics. |
 
 ## Reliability and Scaling
 
@@ -120,7 +140,9 @@ docs/                  Database and architecture documentation
 ## Further Documentation
 
 - **Master Documentation Index**: [docs/README.md](docs/README.md)
-- **Local Setup & Run Guide**: [Run.md](Run.md)
+- **Errors & Troubleshooting Guide**: [errors.md](errors.md)
+- **Web UI Step-by-Step User Guide**: [uiguide.md](uiguide.md)
+- **Complete Run & Operations Runbook**: [run.md](run.md)
 - **Database Architecture**: [docs/01_database_architecture.md](docs/01_database_architecture.md)
 - **Authentication & RBAC**: [docs/02_auth_and_authorization.md](docs/02_auth_and_authorization.md)
 - **Organization & Project Management**: [docs/03_organizations_and_projects.md](docs/03_organizations_and_projects.md)
@@ -133,5 +155,8 @@ docs/                  Database and architecture documentation
 - **System Overview & Verification Playbook**: [docs/10_system_overview_and_verification.md](docs/10_system_overview_and_verification.md)
 - **Scheduler Service Engine**: [docs/11_scheduler_service.md](docs/11_scheduler_service.md)
 - **Worker Heartbeat Monitoring**: [docs/12_worker_heartbeat_monitoring.md](docs/12_worker_heartbeat_monitoring.md)
+- **REST API Standards & OpenAPI Specification**: [docs/13_api_standards_and_openapi.md](docs/13_api_standards_and_openapi.md)
+- **Production Observability & Metrics**: [docs/14_production_observability_and_metrics.md](docs/14_production_observability_and_metrics.md)
+- **React Operations Dashboard**: [docs/15_react_dashboard_application.md](docs/15_react_dashboard_application.md)
 
 
