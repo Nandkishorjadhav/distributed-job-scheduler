@@ -27,6 +27,14 @@ export enum WorkerStatus {
   OFFLINE = 'offline',
 }
 
+// ─── DLQ Statuses ────────────────────────────────────────────────────────────
+
+export enum DLQStatus {
+  UNHANDLED = 'unhandled',
+  RETRIED = 'retried',
+  ARCHIVED = 'archived',
+}
+
 // ─── Retry Strategies ────────────────────────────────────────────────────────
 
 export enum RetryStrategy {

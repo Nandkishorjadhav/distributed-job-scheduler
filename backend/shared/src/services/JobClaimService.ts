@@ -311,14 +311,17 @@ export class JobClaimService {
           `
           INSERT INTO dead_letter_jobs (
             job_id, queue_id, name, payload, total_attempts,
-            final_error_message, final_error_code, first_failed_at, last_failed_at
+            final_error_message, final_error_code, failed_worker_id,
+            first_failed_at, last_failed_at, status
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), 'unhandled')
           ON CONFLICT (job_id) DO UPDATE
           SET total_attempts = EXCLUDED.total_attempts,
               final_error_message = EXCLUDED.final_error_message,
               final_error_code = EXCLUDED.final_error_code,
-              last_failed_at = NOW()
+              failed_worker_id = EXCLUDED.failed_worker_id,
+              last_failed_at = NOW(),
+              status = 'unhandled'
           `,
           [
             jobId,
@@ -328,6 +331,7 @@ export class JobClaimService {
             attemptCount,
             error.message,
             error.code ?? 'JOB_EXECUTION_FAILED',
+            workerId,
             startedAt,
           ]
         );

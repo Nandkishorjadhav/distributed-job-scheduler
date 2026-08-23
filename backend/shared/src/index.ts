@@ -35,3 +35,9 @@ export {
   RetryPolicyRepository,
   RetryPolicyEntity,
 } from './db/repositories/RetryPolicyRepository';
+export {
+  DeadLetterJobRepository,
+  DLQJobResponse,
+  DLQStatsResponse,
+  DLQListFilters,
+} from './db/repositories/DeadLetterJobRepository';

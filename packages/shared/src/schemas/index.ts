@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { RetryStrategy, JobType } from '../enums';
+import { RetryStrategy, JobType, DLQStatus } from '../enums';
 
 // ─── Retry Policy Schema ──────────────────────────────────────────────────────
 
@@ -37,7 +37,7 @@ export const UpdateQueueSchema = z.object({
 export const SubmitJobSchema = z.object({
   name: z.string().min(1).max(256),
   type: z.nativeEnum(JobType).default(JobType.IMMEDIATE),
-  payload: z.record(z.unknown()).default({}),
+  payload: z.record(z.unknown()).optional().default({}),
   priority: z.number().int().min(1).max(10).default(5),
   /** ISO 8601 datetime — required for DELAYED/SCHEDULED types */
   scheduledAt: z.string().datetime().optional(),
@@ -60,24 +60,24 @@ export const SubmitBatchSchema = z.object({
 
 export const CreateRecurringJobSchema = z.object({
   name: z.string().min(1).max(256),
-  cronExpression: z.string().min(1),
-  timezone: z.string().default('UTC'),
   description: z.string().max(1024).optional(),
+  cronExpression: z.string().min(1).max(128),
+  timezone: z.string().max(64).default('UTC'),
+  payloadTemplate: z.record(z.unknown()).default({}),
   priority: z.number().int().min(1).max(10).default(5),
   timeoutMs: z.number().int().min(100).optional(),
   maxAttempts: z.number().int().min(1).max(100).default(3),
-  payloadTemplate: z.record(z.unknown()).default({}),
-  retryPolicy: RetryPolicySchema.optional(),
   enabled: z.boolean().default(true),
-  skipIfRunning: z.boolean().default(false),
+  skipIfRunning: z.boolean().default(true),
+  retryPolicy: RetryPolicySchema.optional(),
 });
 
-// ─── Auth Schemas ─────────────────────────────────────────────────────────────
+// ─── Auth & User Schemas ──────────────────────────────────────────────────────
 
 export const RegisterSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
-  name: z.string().min(1).max(256),
+  password: z.string().min(8).max(128),
+  name: z.string().min(1).max(128),
 });
 
 export const LoginSchema = z.object({
@@ -85,7 +85,7 @@ export const LoginSchema = z.object({
   password: z.string().min(1),
 });
 
-// ─── Org / Project Schemas ───────────────────────────────────────────────────
+// ─── Organization & Project Schemas ──────────────────────────────────────────
 
 export const CreateOrgSchema = z.object({
   name: z.string().min(1).max(128),
@@ -96,7 +96,15 @@ export const CreateOrgSchema = z.object({
     .regex(/^[a-z0-9-]+$/),
 });
 
-export const UpdateOrgSchema = CreateOrgSchema.partial();
+export const UpdateOrgSchema = z.object({
+  name: z.string().min(1).max(128).optional(),
+  slug: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-z0-9-]+$/)
+    .optional(),
+});
 
 export const CreateProjectSchema = z.object({
   organizationId: z.string().uuid(),
@@ -143,6 +151,18 @@ export const JobFilterSchema = PaginationSchema.extend({
   search: z.string().optional(),
 });
 
+export const DLQFilterSchema = PaginationSchema.extend({
+  queueId: z.string().uuid().optional(),
+  projectId: z.string().uuid().optional(),
+  status: z.nativeEnum(DLQStatus).optional(),
+  search: z.string().optional(),
+});
+
+export const DLQStatsQuerySchema = z.object({
+  queueId: z.string().uuid().optional(),
+  projectId: z.string().uuid().optional(),
+});
+
 // ─── Inferred Types ───────────────────────────────────────────────────────────
 
 export type CreateQueueInput = z.infer<typeof CreateQueueSchema>;
@@ -161,3 +181,5 @@ export type PaginationInput = z.infer<typeof PaginationSchema>;
 export type ProjectQueryInput = z.infer<typeof ProjectQuerySchema>;
 export type QueueQueryInput = z.infer<typeof QueueQuerySchema>;
 export type JobFilterInput = z.infer<typeof JobFilterSchema>;
+export type DLQFilterInput = z.infer<typeof DLQFilterSchema>;
+export type DLQStatsQueryInput = z.infer<typeof DLQStatsQuerySchema>;
