@@ -227,7 +227,7 @@ COMMENT ON COLUMN queues.job_timeout_ms IS 'NULL = inherit from retry_policy or 
 -- A worker is a process instance. Workers register on startup and heartbeat
 -- periodically. The scheduler uses last_heartbeat_at to detect dead workers.
 
-CREATE TYPE worker_status AS ENUM ('active', 'draining', 'offline');
+CREATE TYPE worker_status AS ENUM ('online', 'busy', 'unhealthy', 'stopped', 'active', 'draining', 'offline');
 
 CREATE TABLE workers (
     id                UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -236,7 +236,7 @@ CREATE TABLE workers (
     ip_address        INET,
     pid               INT           NOT NULL,
     version           VARCHAR(32),
-    status            worker_status NOT NULL DEFAULT 'active',
+    status            worker_status NOT NULL DEFAULT 'online',
     max_concurrency   INT           NOT NULL DEFAULT 5,
     current_job_count INT           NOT NULL DEFAULT 0,
     last_heartbeat_at TIMESTAMPTZ   NOT NULL DEFAULT NOW(),

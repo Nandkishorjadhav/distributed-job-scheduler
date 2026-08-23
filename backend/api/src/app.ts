@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import fs from 'fs';
 import path from 'path';
+import { getPool, getRedisClient } from '@job-scheduler/backend-shared';
 import { requestIdMiddleware } from './middleware/requestId';
 import { rateLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
@@ -98,17 +99,35 @@ export function createApp(): Application {
   });
 
   // ─── Health check (no auth required) ─────────────────────────────────────
-  app.get('/api/v1/health', (req: Request, res: Response) => {
-    res.json({
-      status: 'ok',
+  app.get('/api/v1/health', async (req: Request, res: Response) => {
+    let dbStatus = 'disconnected';
+    let redisStatus = 'disconnected';
+
+    try {
+      await getPool().query('SELECT 1');
+      dbStatus = 'connected';
+    } catch {
+      dbStatus = 'disconnected';
+    }
+
+    try {
+      await getRedisClient().ping();
+      redisStatus = 'connected';
+    } catch {
+      redisStatus = 'disconnected';
+    }
+
+    const isHealthy = dbStatus === 'connected';
+    res.status(isHealthy ? 200 : 503).json({
+      status: isHealthy ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
       environment: process.env.NODE_ENV ?? 'development',
       uptime: Math.floor(process.uptime()),
       services: {
         api: 'running',
-        database: 'connected',
-        redis: 'connected',
+        database: dbStatus,
+        redis: redisStatus,
       },
       requestId: req.id,
     });

@@ -91,13 +91,13 @@ CREATE TABLE queues (
 
 -- ─── Workers ──────────────────────────────────────────────────────────────────
 
-CREATE TYPE worker_status AS ENUM ('active', 'draining', 'offline');
+CREATE TYPE worker_status AS ENUM ('online', 'busy', 'unhealthy', 'stopped', 'active', 'draining', 'offline');
 
 CREATE TABLE workers (
     id                  UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
     hostname            VARCHAR(255)  NOT NULL,
     pid                 INT           NOT NULL,
-    status              worker_status NOT NULL DEFAULT 'active',
+    status              worker_status NOT NULL DEFAULT 'online',
     max_concurrency     INT           NOT NULL DEFAULT 5,
     last_heartbeat_at   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
     created_at          TIMESTAMPTZ   NOT NULL DEFAULT NOW(),

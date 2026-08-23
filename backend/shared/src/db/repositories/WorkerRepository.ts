@@ -302,19 +302,42 @@ export class WorkerRepository {
 
   /**
    * Scan for workers whose heartbeat has expired and mark them as 'unhealthy'.
+   * Scoped to user's authorized projects if userId or projectId is provided.
    */
-  async markStaleWorkers(timeoutSeconds = 30): Promise<WorkerResponse[]> {
+  async markStaleWorkers(
+    timeoutSeconds = 30,
+    userId?: string,
+    projectId?: string
+  ): Promise<WorkerResponse[]> {
+    let whereClause = `
+      WHERE w.status NOT IN ('unhealthy', 'stopped', 'offline')
+        AND w.last_heartbeat_at < NOW() - make_interval(secs => $1)
+    `;
+    const params: unknown[] = [timeoutSeconds];
+    let paramIndex = 2;
+
+    if (projectId) {
+      whereClause += ` AND w.project_id = $${paramIndex++}`;
+      params.push(projectId);
+    } else if (userId) {
+      whereClause += ` AND w.project_id IN (
+        SELECT p.id FROM projects p
+        JOIN organization_members om ON om.organization_id = p.organization_id
+        WHERE om.user_id = $${paramIndex++}
+      )`;
+      params.push(userId);
+    }
+
     const query = `
-      UPDATE workers
+      UPDATE workers w
       SET status = 'unhealthy',
           updated_at = NOW()
-      WHERE status NOT IN ('unhealthy', 'stopped', 'offline')
-        AND last_heartbeat_at < NOW() - make_interval(secs => $1)
-      RETURNING id, project_id, hostname, ip_address, pid, version, status,
-                max_concurrency, current_job_count, last_heartbeat_at, registered_at,
-                created_at, updated_at
+      ${whereClause}
+      RETURNING w.id, w.project_id, w.hostname, w.ip_address, w.pid, w.version, w.status,
+                w.max_concurrency, w.current_job_count, w.last_heartbeat_at, w.registered_at,
+                w.created_at, w.updated_at
     `;
-    const result = await this.pool.query(query, [timeoutSeconds]);
+    const result = await this.pool.query(query, params);
     return result.rows.map((r) => this.mapToResponse(r));
   }
 

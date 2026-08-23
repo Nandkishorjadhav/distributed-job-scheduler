@@ -1,6 +1,6 @@
 import { Pool, PoolClient } from 'pg';
 import cronParser from 'cron-parser';
-import { logger } from '@job-scheduler/backend-shared';
+import { logger, tryAcquireLock } from '@job-scheduler/backend-shared';
 import { JobStatus, JobType } from '@job-scheduler/shared';
 
 export interface SchedulerOptions {
@@ -354,27 +354,53 @@ export class Scheduler {
   }
 
   /**
-   * Internal tick runner for delayed jobs.
+   * Internal tick runner for delayed jobs with Redis leader-election coordination.
    */
   private async tickDelayedJobs(): Promise<void> {
     if (!this.isRunning || this.isTickInProgress) return;
     this.isTickInProgress = true;
+    let lock: { release: () => Promise<unknown> } | null = null;
     try {
+      try {
+        const lockKey = this.projectId
+          ? `scheduler:delayed_jobs:${this.projectId}:leader`
+          : 'scheduler:delayed_jobs:global:leader';
+        lock = await tryAcquireLock(lockKey, Math.max(3000, this.pollIntervalMs * 2));
+      } catch {
+        // Standalone mode or Redis offline — fall back to transactional SKIP LOCKED
+      }
+
       await this.promoteDueJobs();
     } finally {
+      if (lock) {
+        lock.release().catch(() => {});
+      }
       this.isTickInProgress = false;
     }
   }
 
   /**
-   * Internal tick runner for cron jobs.
+   * Internal tick runner for cron jobs with Redis leader-election coordination.
    */
   private async tickCronJobs(): Promise<void> {
     if (!this.isRunning || this.isCronInProgress) return;
     this.isCronInProgress = true;
+    let lock: { release: () => Promise<unknown> } | null = null;
     try {
+      try {
+        const lockKey = this.projectId
+          ? `scheduler:cron_jobs:${this.projectId}:leader`
+          : 'scheduler:cron_jobs:global:leader';
+        lock = await tryAcquireLock(lockKey, Math.max(3000, this.cronIntervalMs * 2));
+      } catch {
+        // Standalone mode or Redis offline — fall back to transactional SKIP LOCKED
+      }
+
       await this.dispatchDueRecurringJobs();
     } finally {
+      if (lock) {
+        lock.release().catch(() => {});
+      }
       this.isCronInProgress = false;
     }
   }

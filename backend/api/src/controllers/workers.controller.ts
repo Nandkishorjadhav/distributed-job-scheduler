@@ -279,9 +279,18 @@ export async function scanStaleWorkers(
     const timeoutSeconds = req.query.timeoutSeconds
       ? parseInt(req.query.timeoutSeconds as string, 10)
       : 30;
+    const projectId = req.query.projectId as string | undefined;
+
+    if (projectId) {
+      const proj = await getProjectRepository().findById(projectId);
+      if (!proj) {
+        throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
+      }
+      await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.MEMBER);
+    }
 
     const repo = getWorkerRepository();
-    const staleWorkers = await repo.markStaleWorkers(timeoutSeconds);
+    const staleWorkers = await repo.markStaleWorkers(timeoutSeconds, req.user.id, projectId);
 
     res.status(200).json({
       success: true,

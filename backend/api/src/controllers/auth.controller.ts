@@ -26,7 +26,7 @@ export async function register(
       throw new AppError(409, 'User with this email already exists', 'USER_ALREADY_EXISTS');
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 12);
     const user = await userRepo.create({ email, passwordHash, name });
 
     const secret = getJwtSecret();
@@ -60,6 +60,10 @@ export async function login(
     const userRecord = await userRepo.findByEmail(email);
     if (!userRecord) {
       throw new AppError(401, 'Invalid email or password', 'INVALID_CREDENTIALS');
+    }
+
+    if (!userRecord.is_active) {
+      throw new AppError(403, 'Your account has been deactivated. Please contact an administrator.', 'ACCOUNT_INACTIVE');
     }
 
     const isPasswordValid = await bcrypt.compare(password, userRecord.password_hash);

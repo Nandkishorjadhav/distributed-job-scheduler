@@ -26,11 +26,20 @@ export class JobClaimService {
       await client.query('BEGIN');
 
       const claimQuery = `
-        WITH eligible_jobs AS (
+        WITH worker_info AS (
+          SELECT id, project_id, max_concurrency, current_job_count,
+                 GREATEST(0, max_concurrency - current_job_count) AS available_slots
+          FROM workers
+          WHERE id = $3::UUID
+        ),
+        eligible_jobs AS (
           SELECT j.id
           FROM jobs j
           JOIN queues q ON q.id = j.queue_id
+          LEFT JOIN worker_info w ON w.id = $3::UUID
           WHERE j.status = 'pending'
+            AND (w.id IS NULL OR q.project_id = w.project_id)
+            AND (w.id IS NULL OR w.available_slots > 0)
             AND (j.scheduled_at IS NULL OR j.scheduled_at <= NOW())
             AND (j.next_attempt_at IS NULL OR j.next_attempt_at <= NOW())
             AND j.attempt_count < j.max_attempts
@@ -69,6 +78,15 @@ export class JobClaimService {
       ]);
 
       if (result.rows.length > 0) {
+        // Atomically increment worker active job count without exceeding max_concurrency
+        await client.query(
+          `UPDATE workers
+           SET current_job_count = LEAST(max_concurrency, current_job_count + $1),
+               updated_at = NOW()
+           WHERE id = $2::UUID`,
+          [result.rows.length, workerId]
+        );
+
         for (const row of result.rows) {
           logger.info('Job claimed by worker', {
             workerId,
@@ -170,6 +188,15 @@ export class JobClaimService {
         VALUES ($1, 'info', 'Job execution completed successfully')
         `,
         [jobId]
+      );
+
+      // Decrement worker active job count
+      await client.query(
+        `UPDATE workers
+         SET current_job_count = GREATEST(0, current_job_count - 1),
+             updated_at = NOW()
+         WHERE id = $1::UUID`,
+        [workerId]
       );
 
       logger.info('Job completed successfully', {
@@ -401,6 +428,15 @@ export class JobClaimService {
         });
       }
 
+      // Decrement worker active job count
+      await client.query(
+        `UPDATE workers
+         SET current_job_count = GREATEST(0, current_job_count - 1),
+             updated_at = NOW()
+         WHERE id = $1::UUID`,
+        [workerId]
+      );
+
       await client.query('COMMIT');
       return this.mapToJobResponse(failedJob);
     } catch (err) {
@@ -438,6 +474,15 @@ export class JobClaimService {
       if (result.rows.length === 0) {
         throw new Error(`Job ${jobId} not in running state or not assigned to worker ${workerId}`);
       }
+
+      // Decrement worker active job count
+      await client.query(
+        `UPDATE workers
+         SET current_job_count = GREATEST(0, current_job_count - 1),
+             updated_at = NOW()
+         WHERE id = $1::UUID`,
+        [workerId]
+      );
 
       await client.query('COMMIT');
       return this.mapToJobResponse(result.rows[0]);
