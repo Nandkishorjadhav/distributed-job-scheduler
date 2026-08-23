@@ -111,7 +111,7 @@ export class JobRepository {
     }
 
     let initialStatus = JobStatus.PENDING;
-    if ((jobType === JobType.DELAYED || jobType === JobType.SCHEDULED) && scheduledAtDate && scheduledAtDate.getTime() > Date.now()) {
+    if (jobType === JobType.DELAYED || jobType === JobType.SCHEDULED) {
       initialStatus = JobStatus.SCHEDULED;
     }
 
@@ -263,6 +263,15 @@ export class JobRepository {
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
+  }
+
+  /**
+   * Alias for createRecurring to create scheduled cron job definitions.
+   */
+  async createScheduledJob(
+    data: CreateRecurringJobInput & { queueId: string }
+  ): Promise<ScheduledJobResponse> {
+    return this.createRecurring(data);
   }
 
   /**

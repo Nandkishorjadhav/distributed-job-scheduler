@@ -1,0 +1,143 @@
+# Step 5: Job Domain Model & Lifecycle Finite State Machine
+
+## Overview
+
+The job domain model defines 5 distinct job types and an 8-state **Finite State Machine (FSM)**. State transitions are strictly validated to prevent illegal operations (such as retrying an already completed job or cancelling a finished execution), while execution attempts and logs are immutably preserved.
+
+---
+
+## 1. Job Types Supported
+
+| Job Type | Key | Initial Status | Behavior |
+| :--- | :--- | :--- | :--- |
+| **Immediate** | `immediate` | `pending` | Executes as soon as an active worker has capacity. |
+| **Delayed** | `delayed` | `scheduled` | Scheduled to run after a delay (`scheduledAt = NOW() + delayMs`). |
+| **Scheduled** | `scheduled` | `scheduled` | Scheduled to run at a specific future ISO 8601 timestamp. |
+| **Recurring Cron** | `recurring` | `scheduled` | Created via cron template (`scheduled_jobs`) and spawned periodically. |
+| **Batch Child** | `batch_child` | `pending` | Child job linked to a parent `batch_groups` aggregate counter. |
+
+---
+
+## 2. Finite State Machine (FSM) Transition Matrix
+
+```
+                        ┌──────────────┐
+                        │  SCHEDULED   │
+                        └──────┬───────┘
+                               │ (due time reached)
+                               ▼
+                        ┌──────────────┐
+     ┌─────────────────►│   QUEUED     │──────────────────┐
+     │ (retry)          │  (pending)   │                  │
+     │                  └──────┬───────┘                  │
+     │                         │ (worker claim)           │
+     │                         ▼                          │ (user cancel)
+┌────┴─────────┐        ┌──────────────┐                  │
+│   FAILED /   │◄───────│   RUNNING    │                  │
+│   RETRYING   │        │  (claimed)   │                  │
+└────┬─────────┘        └───┬──────────┘                  │
+     │                      │ (success)                   │
+     │ (exhausted attempts) ▼                             │
+     │                  ┌──────────────┐                  │
+     └─────────────────►│  COMPLETED   │                  │
+     │ (move to DLQ)    │  (terminal)  │                  │
+     ▼                  └──────────────┘                  │
+┌──────────────┐                                          │
+│ DEAD_LETTER  │                                          │
+│    (dead)    │                                          │
+└────┬─────────┘                                          │
+     │ (manual retry)                                     │
+     └────────────────────────────────────────────────────┤
+                                                          ▼
+                                                   ┌──────────────┐
+                                                   │  CANCELLED   │
+                                                   │  (terminal)  │
+                                                   └──────────────┘
+```
+
+### Transition Validation Rules ([`JobStateMachine.ts`](file:///d:/Job%20Scheduler/backend/shared/src/domain/JobStateMachine.ts)):
+
+| From State | Allowed Target States | Description |
+| :--- | :--- | :--- |
+| `SCHEDULED` | `PENDING`, `CANCELLED` | Promoted to `PENDING` when `scheduled_at <= NOW()`. |
+| `PENDING` | `RUNNING`, `CANCELLED` | Claimed by worker to transition to `RUNNING`. |
+| `RUNNING` | `COMPLETED`, `FAILED`, `DEAD`, `CANCELLED` | Active execution outcome. |
+| `FAILED` | `PENDING`, `DEAD` | Retry backoff re-queues to `PENDING`, or moves to `DEAD` if max attempts reached. |
+| `DEAD` | `PENDING` | Manual DLQ re-queue resets job back to `PENDING`. |
+| `COMPLETED` | *(None)* | **Terminal State**. Self or outbound transitions throw `400 Bad Request`. |
+| `CANCELLED` | *(None)* | **Terminal State**. Cannot be retried or transitioned. |
+
+---
+
+## 3. Execution History & Log Streaming
+
+Every execution attempt is atomically recorded in `job_executions`:
+- `attempt_number` (1-based attempt counter)
+- `status` (`running`, `completed`, `failed`, `timed_out`, `cancelled`)
+- `started_at` & `finished_at`
+- `duration_ms` (PostgreSQL generated column)
+- `error_message`, `error_code`, `next_retry_at`, `retry_delay_ms`
+
+Structured logs are written to `job_logs` with severity levels:
+`debug`, `info`, `warn`, `error`.
+
+---
+
+## 4. REST Endpoints
+
+### 1. Submit Single Job
+- **`POST /api/v1/queues/:queueId/jobs`** (or **`POST /api/v1/jobs`**)
+- **Body**:
+  ```json
+  {
+    "name": "send-welcome-email",
+    "type": "immediate",
+    "payload": { "userId": "usr_100", "email": "user@example.com" },
+    "priority": 3,
+    "maxAttempts": 3
+  }
+  ```
+- **Response `201 Created`**.
+
+### 2. Submit Batch of Jobs
+- **`POST /api/v1/queues/:queueId/batch`**
+- **Body**:
+  ```json
+  {
+    "name": "bulk-notifications",
+    "jobs": [
+      { "name": "notify-user-1", "payload": { "id": 1 } },
+      { "name": "notify-user-2", "payload": { "id": 2 } }
+    ]
+  }
+  ```
+- **Response `201 Created`**: Returns `batchGroupId`, `totalJobs`, and job array.
+
+### 3. Create Recurring Cron Job
+- **`POST /api/v1/queues/:queueId/recurring`**
+- **Body**:
+  ```json
+  {
+    "name": "hourly-cleanup",
+    "cronExpression": "0 * * * *",
+    "timezone": "UTC",
+    "payloadTemplate": { "action": "purge_logs" }
+  }
+  ```
+
+### 4. Get Job Details & List Jobs
+- **`GET /api/v1/jobs/:jobId`**: Retrieve single job.
+- **`GET /api/v1/jobs`** or **`GET /api/v1/queues/:queueId/jobs`**: Paginated listing with filters (`status`, `type`, `search`, `page`, `pageSize`).
+
+### 5. Cancel Job
+- **`POST /api/v1/jobs/:jobId/cancel`** (or `DELETE /api/v1/jobs/:jobId`)
+- Validates FSM rules. Returns `400 Bad Request` if job cannot be cancelled.
+
+### 6. Retry Failed Job
+- **`POST /api/v1/jobs/:jobId/retry`**
+- Validates FSM rules. Resets status to `pending`, clears error messages, and increments retry metrics.
+
+### 7. Execution History & Logs
+- **`GET /api/v1/jobs/:jobId/executions`**: Returns array of all execution attempts.
+- **`GET /api/v1/jobs/:jobId/logs`**: Returns log stream filtered by `?level=`.
+- **`GET /api/v1/jobs/:jobId/history`**: Full audit summary (job details + executions + logs).

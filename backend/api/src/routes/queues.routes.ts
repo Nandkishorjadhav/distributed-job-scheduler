@@ -7,6 +7,7 @@ import {
   SubmitBatchSchema,
   CreateRecurringJobSchema,
   JobFilterSchema,
+  DLQFilterSchema,
 } from '@job-scheduler/shared';
 import { validate, validateQuery } from '../middleware/validate';
 import {
@@ -20,6 +21,7 @@ import {
   getQueueStats,
 } from '../controllers/queue.controller';
 import { createJob, createBatchJobs, createRecurringJob, listJobs } from '../controllers/job.controller';
+import { listDlqJobs, getDlqStats } from '../controllers/dlq.controller';
 
 export const queuesRouter = Router();
 
@@ -60,3 +62,11 @@ queuesRouter.post('/:queueId/recurring', validate(CreateRecurringJobSchema), cre
 
 // GET /api/v1/queues/:queueId/jobs — List jobs in a queue
 queuesRouter.get('/:queueId/jobs', validateQuery(JobFilterSchema), listJobs);
+
+// ── Queue-scoped Dead Letter Queue ───────────────────────────────────────────
+
+// GET /api/v1/queues/:queueId/dlq — List DLQ jobs for this queue
+queuesRouter.get('/:queueId/dlq', validateQuery(DLQFilterSchema), listDlqJobs);
+
+// GET /api/v1/queues/:queueId/dlq/stats — Get DLQ stats for this queue
+queuesRouter.get('/:queueId/dlq/stats', getDlqStats);

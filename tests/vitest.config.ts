@@ -7,6 +7,7 @@ export default defineConfig({
       '@job-scheduler/shared': path.resolve(__dirname, '../packages/shared/src'),
       '@job-scheduler/backend-shared': path.resolve(__dirname, '../backend/shared/src'),
       '@job-scheduler/worker': path.resolve(__dirname, '../backend/worker/src'),
+      '@job-scheduler/scheduler': path.resolve(__dirname, '../backend/scheduler/src'),
     },
   },
   test: {

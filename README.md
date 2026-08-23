@@ -119,8 +119,17 @@ docs/                  Database and architecture documentation
 
 ## Further Documentation
 
+- **Master Documentation Index**: [docs/README.md](docs/README.md)
 - **Local Setup & Run Guide**: [Run.md](Run.md)
-- **Worker Service Guide**: [backend/worker/README.md](backend/worker/README.md)
-- **Job Claiming & Concurrency Architecture**: [docs/job_claiming.md](docs/job_claiming.md)
-- **Database Schema & Migrations**: [docs/database.md](docs/database.md)
+- **Database Architecture**: [docs/01_database_architecture.md](docs/01_database_architecture.md)
+- **Authentication & RBAC**: [docs/02_auth_and_authorization.md](docs/02_auth_and_authorization.md)
+- **Organization & Project Management**: [docs/03_organizations_and_projects.md](docs/03_organizations_and_projects.md)
+- **Queue Management**: [docs/04_queue_management.md](docs/04_queue_management.md)
+- **Job Domain Model & Lifecycle**: [docs/05_job_domain_and_lifecycle.md](docs/05_job_domain_and_lifecycle.md)
+- **Distributed Atomic Job Claiming**: [docs/06_distributed_job_claiming.md](docs/06_distributed_job_claiming.md)
+- **Worker Service Engine**: [docs/07_worker_service.md](docs/07_worker_service.md)
+- **Retry Policy System**: [docs/08_retry_policy_system.md](docs/08_retry_policy_system.md)
+- **Dead Letter Queue (DLQ)**: [docs/09_dead_letter_queue.md](docs/09_dead_letter_queue.md)
+- **System Overview & Verification Playbook**: [docs/10_system_overview_and_verification.md](docs/10_system_overview_and_verification.md)
+
 
