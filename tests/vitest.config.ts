@@ -6,6 +6,7 @@ export default defineConfig({
     alias: {
       '@job-scheduler/shared': path.resolve(__dirname, '../packages/shared/src'),
       '@job-scheduler/backend-shared': path.resolve(__dirname, '../backend/shared/src'),
+      '@job-scheduler/worker': path.resolve(__dirname, '../backend/worker/src'),
     },
   },
   test: {

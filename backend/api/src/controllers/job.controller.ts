@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { OrgRole, SubmitJobInput, SubmitBatchInput, JobFilterInput, LogLevel } from '@job-scheduler/shared';
+import { OrgRole, SubmitJobInput, SubmitBatchInput, CreateJobDirectInput, CreateRecurringJobInput, JobFilterInput, LogLevel } from '@job-scheduler/shared';
 import { JobRepository, QueueRepository, ProjectRepository, getPool } from '@job-scheduler/backend-shared';
 import { AuthenticatedRequest } from '../middleware/authenticate';
 import { checkOrgPermission } from '../middleware/authorization';
@@ -19,8 +19,12 @@ export async function createJob(
       throw new AppError(401, 'Authentication required', 'UNAUTHORIZED');
     }
 
-    const { queueId } = req.params;
-    const { name, type, payload, priority, scheduledAt, maxAttempts } = req.body as SubmitJobInput;
+    const queueId = req.params.queueId || (req.body as CreateJobDirectInput).queueId;
+    if (!queueId) {
+      throw new AppError(400, 'queueId is required', 'QUEUE_ID_REQUIRED');
+    }
+
+    const { name, type, payload, priority, scheduledAt, maxAttempts, timeoutMs } = req.body as SubmitJobInput;
 
     const queueRepo = getQueueRepository();
     const queue = await queueRepo.findById(queueId);
@@ -45,6 +49,7 @@ export async function createJob(
       priority,
       scheduledAt,
       maxAttempts,
+      timeoutMs,
     });
 
     res.status(201).json({
@@ -93,6 +98,48 @@ export async function createBatchJobs(
     res.status(201).json({
       success: true,
       data: batchResult,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function createRecurringJob(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.user) {
+      throw new AppError(401, 'Authentication required', 'UNAUTHORIZED');
+    }
+
+    const { queueId } = req.params;
+    const input = req.body as CreateRecurringJobInput;
+
+    const queueRepo = getQueueRepository();
+    const queue = await queueRepo.findById(queueId);
+    if (!queue) {
+      throw new AppError(404, 'Queue not found', 'QUEUE_NOT_FOUND');
+    }
+
+    const projectRepo = getProjectRepository();
+    const project = await projectRepo.findById(queue.projectId);
+    if (!project) {
+      throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
+    }
+
+    await checkOrgPermission(req.user.id, project.organizationId, OrgRole.MEMBER);
+
+    const jobRepo = getJobRepository();
+    const scheduledJob = await jobRepo.createRecurring({
+      ...input,
+      queueId,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: { scheduledJob },
     });
   } catch (err) {
     next(err);
@@ -155,9 +202,8 @@ export async function listJobs(
       pageSize: 20,
     };
 
-    const { page, pageSize, status, search } = query;
-    const type = (query as { type?: string }).type;
-    const queueId = (req.params.queueId || (query as { queueId?: string }).queueId);
+    const { page, pageSize, status, search, type, projectId } = query;
+    const queueId = (req.params.queueId || query.queueId);
 
     if (queueId) {
       const queueRepo = getQueueRepository();
@@ -176,6 +222,7 @@ export async function listJobs(
     const jobRepo = getJobRepository();
     const { data, total } = await jobRepo.listByUser(req.user.id, page, pageSize, {
       queueId,
+      projectId,
       status,
       type,
       search,
@@ -372,6 +419,49 @@ export async function getJobLogs(
     res.status(200).json({
       success: true,
       data: { logs },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getJobHistory(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.user) {
+      throw new AppError(401, 'Authentication required', 'UNAUTHORIZED');
+    }
+
+    const { jobId } = req.params;
+    const jobRepo = getJobRepository();
+    const job = await jobRepo.findById(jobId);
+
+    if (!job) {
+      throw new AppError(404, 'Job not found', 'JOB_NOT_FOUND');
+    }
+
+    const queueRepo = getQueueRepository();
+    const queue = await queueRepo.findById(job.queueId);
+    if (!queue) {
+      throw new AppError(404, 'Queue not found', 'QUEUE_NOT_FOUND');
+    }
+
+    const projectRepo = getProjectRepository();
+    const project = await projectRepo.findById(queue.projectId);
+    if (!project) {
+      throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
+    }
+
+    await checkOrgPermission(req.user.id, project.organizationId, OrgRole.VIEWER);
+
+    const history = await jobRepo.getJobHistory(jobId);
+
+    res.status(200).json({
+      success: true,
+      data: history,
     });
   } catch (err) {
     next(err);

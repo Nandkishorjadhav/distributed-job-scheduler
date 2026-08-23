@@ -61,7 +61,7 @@ describe('Job Domain Model & Lifecycle API Tests', () => {
     queueId = queueRes.body.data.queue.id;
   });
 
-  describe('Job Creation (Immediate, Delayed, Batch)', () => {
+  describe('Job Creation (Immediate, Delayed, Scheduled, Recurring Cron, Batch)', () => {
     it('creates an immediate job in PENDING status', async () => {
       const response = await request(app)
         .post(`/api/v1/queues/${queueId}/jobs`)
@@ -83,6 +83,21 @@ describe('Job Domain Model & Lifecycle API Tests', () => {
       immediateJobId = response.body.data.job.id;
     });
 
+    it('creates a job directly using POST /api/v1/jobs with queueId in body', async () => {
+      const response = await request(app)
+        .post('/api/v1/jobs')
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({
+          queueId,
+          name: 'direct-submission-job',
+          payload: { data: 'direct' },
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.job.name).toBe('direct-submission-job');
+    });
+
     it('creates a delayed job in SCHEDULED status when scheduledAt is in future', async () => {
       const futureTime = new Date(Date.now() + 3600000).toISOString();
       const response = await request(app)
@@ -102,6 +117,40 @@ describe('Job Domain Model & Lifecycle API Tests', () => {
       expect(response.body.data.job.scheduledAt).toBeDefined();
 
       delayedJobId = response.body.data.job.id;
+    });
+
+    it('creates a scheduled job in SCHEDULED status', async () => {
+      const futureTime = new Date(Date.now() + 7200000).toISOString();
+      const response = await request(app)
+        .post(`/api/v1/queues/${queueId}/jobs`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({
+          name: 'midnight-database-backup',
+          type: 'scheduled',
+          payload: { target: 's3://backups' },
+          scheduledAt: futureTime,
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.job.status).toBe('scheduled');
+      expect(response.body.data.job.type).toBe('scheduled');
+    });
+
+    it('creates a recurring cron job definition', async () => {
+      const response = await request(app)
+        .post(`/api/v1/queues/${queueId}/recurring`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({
+          name: 'hourly-health-check',
+          cronExpression: '0 * * * *',
+          payloadTemplate: { check: 'all' },
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.scheduledJob.id).toBeDefined();
+      expect(response.body.data.scheduledJob.cronExpression).toBe('0 * * * *');
     });
 
     it('creates a batch of child jobs in a batch group', async () => {
@@ -257,6 +306,18 @@ describe('Job Domain Model & Lifecycle API Tests', () => {
       expect(response.body.success).toBe(true);
       expect(Array.isArray(response.body.data.logs)).toBe(true);
       expect(response.body.data.logs.length).toBe(2);
+    });
+
+    it('retrieves full job history (details + executions + logs)', async () => {
+      const response = await request(app)
+        .get(`/api/v1/jobs/${delayedJobId}/history`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.job).toBeDefined();
+      expect(Array.isArray(response.body.data.executions)).toBe(true);
+      expect(Array.isArray(response.body.data.logs)).toBe(true);
     });
   });
 });

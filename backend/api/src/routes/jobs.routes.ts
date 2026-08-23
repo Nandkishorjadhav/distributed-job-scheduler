@@ -1,16 +1,21 @@
 import { Router } from 'express';
-import { JobFilterSchema } from '@job-scheduler/shared';
-import { validateQuery } from '../middleware/validate';
+import { CreateJobDirectSchema, JobFilterSchema } from '@job-scheduler/shared';
+import { validate, validateQuery } from '../middleware/validate';
 import {
+  createJob,
   getJob,
   listJobs,
   cancelJob,
   retryJob,
   getExecutionHistory,
   getJobLogs,
+  getJobHistory,
 } from '../controllers/job.controller';
 
 export const jobsRouter = Router();
+
+// POST /api/v1/jobs — Create a job directly specifying queueId
+jobsRouter.post('/', validate(CreateJobDirectSchema), createJob);
 
 // GET /api/v1/jobs — List jobs across user's organizations with filters & pagination
 jobsRouter.get('/', validateQuery(JobFilterSchema), listJobs);
@@ -32,3 +37,6 @@ jobsRouter.get('/:jobId/executions', getExecutionHistory);
 
 // GET /api/v1/jobs/:jobId/logs — Get execution logs
 jobsRouter.get('/:jobId/logs', getJobLogs);
+
+// GET /api/v1/jobs/:jobId/history — Get full job history (details + executions + logs)
+jobsRouter.get('/:jobId/history', getJobHistory);

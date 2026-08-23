@@ -1,5 +1,13 @@
 import { Router } from 'express';
-import { CreateQueueSchema, UpdateQueueSchema, QueueQuerySchema, SubmitJobSchema, SubmitBatchSchema, JobFilterSchema } from '@job-scheduler/shared';
+import {
+  CreateQueueSchema,
+  UpdateQueueSchema,
+  QueueQuerySchema,
+  SubmitJobSchema,
+  SubmitBatchSchema,
+  CreateRecurringJobSchema,
+  JobFilterSchema,
+} from '@job-scheduler/shared';
 import { validate, validateQuery } from '../middleware/validate';
 import {
   createQueue,
@@ -11,7 +19,7 @@ import {
   deleteQueue,
   getQueueStats,
 } from '../controllers/queue.controller';
-import { createJob, createBatchJobs, listJobs } from '../controllers/job.controller';
+import { createJob, createBatchJobs, createRecurringJob, listJobs } from '../controllers/job.controller';
 
 export const queuesRouter = Router();
 
@@ -46,6 +54,9 @@ queuesRouter.post('/:queueId/jobs', validate(SubmitJobSchema), createJob);
 
 // POST /api/v1/queues/:queueId/batch — Submit a batch of jobs to a queue
 queuesRouter.post('/:queueId/batch', validate(SubmitBatchSchema), createBatchJobs);
+
+// POST /api/v1/queues/:queueId/recurring — Create recurring cron job template
+queuesRouter.post('/:queueId/recurring', validate(CreateRecurringJobSchema), createRecurringJob);
 
 // GET /api/v1/queues/:queueId/jobs — List jobs in a queue
 queuesRouter.get('/:queueId/jobs', validateQuery(JobFilterSchema), listJobs);

@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { JobStatus, JobType, LogLevel, SubmitJobInput } from '@job-scheduler/shared';
+import { JobStatus, JobType, LogLevel, SubmitJobInput, CreateRecurringJobInput } from '@job-scheduler/shared';
 import { assertStateTransition } from '../../domain/JobStateMachine';
 
 export interface JobResponse {
@@ -55,6 +55,34 @@ export interface JobLogResponse {
   message: string;
   metadata: Record<string, unknown> | null;
   loggedAt: Date;
+}
+
+export interface ScheduledJobResponse {
+  id: string;
+  queueId: string;
+  name: string;
+  description: string | null;
+  cronExpression: string;
+  timezone: string;
+  payloadTemplate: Record<string, unknown>;
+  priority: number;
+  timeoutMs: number | null;
+  maxAttempts: number;
+  enabled: boolean;
+  skipIfRunning: boolean;
+  lastFiredAt: Date | null;
+  nextRunAt: Date | null;
+  lastJobId: string | null;
+  runCount: number;
+  failCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface JobHistoryResponse {
+  job: JobResponse;
+  executions: JobExecutionResponse[];
+  logs: JobLogResponse[];
 }
 
 export class JobRepository {
@@ -145,9 +173,9 @@ export class JobRepository {
 
         const jobQuery = `
           INSERT INTO jobs (
-            queue_id, name, type, status, payload, priority, scheduled_at, max_attempts, batch_group_id
+            queue_id, name, type, status, payload, priority, scheduled_at, max_attempts, timeout_ms, batch_group_id
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
           RETURNING id, queue_id, worker_id, batch_group_id, scheduled_job_id, name, type, status, payload, priority,
                     scheduled_at, run_at, attempt_count, max_attempts, next_attempt_at, timeout_ms, result, error_message, error_code,
                     enqueued_at, started_at, finished_at, created_at, updated_at
@@ -162,6 +190,7 @@ export class JobRepository {
           jobInput.priority ?? 5,
           scheduledAtDate,
           jobInput.maxAttempts ?? 3,
+          jobInput.timeoutMs ?? null,
           batchGroupId,
         ];
 
@@ -177,6 +206,63 @@ export class JobRepository {
     } finally {
       client.release();
     }
+  }
+
+  /**
+   * Create a recurring cron job definition.
+   */
+  async createRecurring(
+    data: CreateRecurringJobInput & { queueId: string }
+  ): Promise<ScheduledJobResponse> {
+    const query = `
+      INSERT INTO scheduled_jobs (
+        queue_id, name, description, cron_expression, timezone, payload_template,
+        priority, timeout_ms, max_attempts, enabled, skip_if_running
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      RETURNING id, queue_id, name, description, cron_expression, timezone, payload_template,
+                priority, timeout_ms, max_attempts, enabled, skip_if_running, last_fired_at,
+                next_run_at, last_job_id, run_count, fail_count, created_at, updated_at
+    `;
+
+    const values = [
+      data.queueId,
+      data.name.trim(),
+      data.description ? data.description.trim() : null,
+      data.cronExpression.trim(),
+      data.timezone ?? 'UTC',
+      JSON.stringify(data.payloadTemplate ?? {}),
+      data.priority ?? 5,
+      data.timeoutMs ?? null,
+      data.maxAttempts ?? 3,
+      data.enabled ?? true,
+      data.skipIfRunning ?? false,
+    ];
+
+    const result = await this.pool.query(query, values);
+    const row = result.rows[0];
+
+    return {
+      id: row.id,
+      queueId: row.queue_id,
+      name: row.name,
+      description: row.description,
+      cronExpression: row.cron_expression,
+      timezone: row.timezone,
+      payloadTemplate: row.payload_template ? (typeof row.payload_template === 'string' ? JSON.parse(row.payload_template) : row.payload_template) : {},
+      priority: parseInt(row.priority, 10),
+      timeoutMs: row.timeout_ms !== null ? parseInt(row.timeout_ms, 10) : null,
+      maxAttempts: parseInt(row.max_attempts, 10),
+      enabled: row.enabled,
+      skipIfRunning: row.skip_if_running,
+      lastFiredAt: row.last_fired_at ? new Date(row.last_fired_at) : null,
+      nextRunAt: row.next_run_at ? new Date(row.next_run_at) : null,
+      lastJobId: row.last_job_id,
+      runCount: parseInt(row.run_count, 10),
+      failCount: parseInt(row.fail_count, 10),
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at),
+    };
   }
 
   /**
@@ -505,6 +591,21 @@ export class JobRepository {
       metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : null,
       loggedAt: new Date(row.logged_at),
     }));
+  }
+
+  /**
+   * Get full audit history (job details + execution attempts + logs).
+   */
+  async getJobHistory(jobId: string): Promise<JobHistoryResponse | null> {
+    const job = await this.findById(jobId);
+    if (!job) return null;
+
+    const [executions, logs] = await Promise.all([
+      this.getExecutionHistory(jobId),
+      this.getJobLogs(jobId),
+    ]);
+
+    return { job, executions, logs };
   }
 
   private mapToResponse(row: Record<string, unknown>): JobResponse {

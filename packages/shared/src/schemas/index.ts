@@ -42,11 +42,17 @@ export const SubmitJobSchema = z.object({
   /** ISO 8601 datetime — required for DELAYED/SCHEDULED types */
   scheduledAt: z.string().datetime().optional(),
   maxAttempts: z.number().int().min(1).max(100).optional(),
+  timeoutMs: z.number().int().min(100).optional(),
   retryPolicy: RetryPolicySchema.optional(),
+});
+
+export const CreateJobDirectSchema = SubmitJobSchema.extend({
+  queueId: z.string().uuid(),
 });
 
 export const SubmitBatchSchema = z.object({
   name: z.string().min(1).max(256),
+  description: z.string().max(1024).optional(),
   jobs: z.array(SubmitJobSchema).min(1).max(1000),
 });
 
@@ -55,9 +61,15 @@ export const SubmitBatchSchema = z.object({
 export const CreateRecurringJobSchema = z.object({
   name: z.string().min(1).max(256),
   cronExpression: z.string().min(1),
+  timezone: z.string().default('UTC'),
+  description: z.string().max(1024).optional(),
+  priority: z.number().int().min(1).max(10).default(5),
+  timeoutMs: z.number().int().min(100).optional(),
+  maxAttempts: z.number().int().min(1).max(100).default(3),
   payloadTemplate: z.record(z.unknown()).default({}),
   retryPolicy: RetryPolicySchema.optional(),
   enabled: z.boolean().default(true),
+  skipIfRunning: z.boolean().default(false),
 });
 
 // ─── Auth Schemas ─────────────────────────────────────────────────────────────
@@ -124,7 +136,10 @@ export const QueueQuerySchema = PaginationSchema.extend({
 });
 
 export const JobFilterSchema = PaginationSchema.extend({
+  queueId: z.string().uuid().optional(),
+  projectId: z.string().uuid().optional(),
   status: z.string().optional(),
+  type: z.string().optional(),
   search: z.string().optional(),
 });
 
@@ -133,6 +148,7 @@ export const JobFilterSchema = PaginationSchema.extend({
 export type CreateQueueInput = z.infer<typeof CreateQueueSchema>;
 export type UpdateQueueInput = z.infer<typeof UpdateQueueSchema>;
 export type SubmitJobInput = z.infer<typeof SubmitJobSchema>;
+export type CreateJobDirectInput = z.infer<typeof CreateJobDirectSchema>;
 export type SubmitBatchInput = z.infer<typeof SubmitBatchSchema>;
 export type CreateRecurringJobInput = z.infer<typeof CreateRecurringJobSchema>;
 export type RegisterInput = z.infer<typeof RegisterSchema>;
