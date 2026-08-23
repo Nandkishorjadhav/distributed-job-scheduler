@@ -22,6 +22,11 @@ export enum QueueStatus {
 // ─── Worker Statuses ─────────────────────────────────────────────────────────
 
 export enum WorkerStatus {
+  ONLINE = 'online',
+  BUSY = 'busy',
+  UNHEALTHY = 'unhealthy',
+  STOPPED = 'stopped',
+  // Backward compatibility
   ACTIVE = 'active',
   DRAINING = 'draining',
   OFFLINE = 'offline',

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { RetryStrategy, JobType, DLQStatus } from '../enums';
+import { RetryStrategy, JobType, DLQStatus, WorkerStatus } from '../enums';
 
 // ─── Retry Policy Schema ──────────────────────────────────────────────────────
 
@@ -128,6 +128,23 @@ export const UpdateProjectSchema = z.object({
   description: z.string().max(1024).optional(),
 });
 
+// ─── Worker Schemas ───────────────────────────────────────────────────────────
+
+export const RegisterWorkerSchema = z.object({
+  projectId: z.string().uuid(),
+  hostname: z.string().min(1).max(255),
+  pid: z.number().int().min(1),
+  ipAddress: z.string().optional(),
+  version: z.string().max(32).optional().default('1.0.0'),
+  maxConcurrency: z.number().int().min(1).max(1000).optional().default(5),
+});
+
+export const WorkerHeartbeatSchema = z.object({
+  currentJobCount: z.number().int().min(0).optional(),
+  metadata: z.record(z.unknown()).optional(),
+  status: z.nativeEnum(WorkerStatus).optional(),
+});
+
 // ─── Query / Pagination Schemas ───────────────────────────────────────────────
 
 export const PaginationSchema = z.object({
@@ -141,6 +158,11 @@ export const ProjectQuerySchema = PaginationSchema.extend({
 
 export const QueueQuerySchema = PaginationSchema.extend({
   projectId: z.string().uuid().optional(),
+});
+
+export const WorkerQuerySchema = PaginationSchema.extend({
+  projectId: z.string().uuid().optional(),
+  status: z.string().optional(),
 });
 
 export const JobFilterSchema = PaginationSchema.extend({
@@ -177,9 +199,12 @@ export type CreateOrgInput = z.infer<typeof CreateOrgSchema>;
 export type UpdateOrgInput = z.infer<typeof UpdateOrgSchema>;
 export type CreateProjectInput = z.infer<typeof CreateProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof UpdateProjectSchema>;
+export type RegisterWorkerInput = z.infer<typeof RegisterWorkerSchema>;
+export type WorkerHeartbeatInput = z.infer<typeof WorkerHeartbeatSchema>;
 export type PaginationInput = z.infer<typeof PaginationSchema>;
 export type ProjectQueryInput = z.infer<typeof ProjectQuerySchema>;
 export type QueueQueryInput = z.infer<typeof QueueQuerySchema>;
+export type WorkerQueryInput = z.infer<typeof WorkerQuerySchema>;
 export type JobFilterInput = z.infer<typeof JobFilterSchema>;
 export type DLQFilterInput = z.infer<typeof DLQFilterSchema>;
 export type DLQStatsQueryInput = z.infer<typeof DLQStatsQuerySchema>;

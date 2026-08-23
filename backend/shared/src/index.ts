@@ -26,7 +26,12 @@ export {
   ScheduledJobResponse,
 } from './db/repositories/JobRepository';
 export { QueueRepository, QueueResponse, QueueStatsResponse } from './db/repositories/QueueRepository';
-export { WorkerRepository, WorkerResponse } from './db/repositories/WorkerRepository';
+export {
+  WorkerRepository,
+  WorkerResponse,
+  WorkerHeartbeatRecord,
+  WorkerListFilters,
+} from './db/repositories/WorkerRepository';
 export { OrgRepository, OrgResponse } from './db/repositories/OrgRepository';
 export { ProjectRepository, ProjectResponse } from './db/repositories/ProjectRepository';
 export { UserRepository, UserResponse } from './db/repositories/UserRepository';

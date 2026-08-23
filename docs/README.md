@@ -19,14 +19,15 @@ This directory contains the detailed guides, architectural specifications, datab
 | **07** | [**07. Distributed Worker Service Engine**](07_worker_service.md) | Worker process lifecycle (`register`, `heartbeat`, `poll`, `execute`, `drain`, `deregister`), concurrency slot calculation, extensible `JobHandlerRegistry`, timeouts, and graceful shutdown. |
 | **08** | [**08. Retry Policy System & Backoff Engine**](08_retry_policy_system.md) | Mathematical backoff models (Fixed delay, Linear backoff, Exponential backoff), retry storm prevention via randomized full jitter, ceiling capping, and deterministic test calculation. |
 | **09** | [**09. Dead Letter Queue (DLQ) & Quarantine**](09_dead_letter_queue.md) | Quarantining exhausted jobs, retained metadata snapshots, list, inspect with full logs, re-queue/retry, archive, delete, and dashboard-ready statistics. |
-| **10** | [**10. System Overview & Verification Playbook**](10_system_overview_and_verification.md) | Master architectural topology, complete REST API endpoints catalog, environment variables reference, PowerShell interactive verification script, and automated test runbook (107 tests). |
+| **10** | [**10. System Overview & Verification Playbook**](10_system_overview_and_verification.md) | Master architectural topology, complete REST API endpoints catalog, environment variables reference, PowerShell interactive verification script, and automated test runbook (117 tests). |
 | **11** | [**11. Scheduler Service Engine**](11_scheduler_service.md) | Time-based job promotions (`SCHEDULED` $\rightarrow$ `QUEUED`), recurring cron dispatcher, `skip_if_running` overlap protection, multi-instance concurrency safety, and missed schedule recovery. |
+| **12** | [**12. Worker Heartbeat Monitoring & Reliability**](12_worker_heartbeat_monitoring.md) | Worker state lifecycle (`ONLINE`, `BUSY`, `UNHEALTHY`, `STOPPED`), heartbeat endpoints, stale worker detection, and execution reliability trade-off design for orphaned jobs. |
 
 ---
 
 ## Quick Verification Commands
 
-### Run Full Test Suite (107 Tests Across 12 Suites)
+### Run Full Test Suite (117 Tests Across 13 Suites)
 ```powershell
 cd "d:\Job Scheduler\tests"
 npx vitest run --reporter=verbose
