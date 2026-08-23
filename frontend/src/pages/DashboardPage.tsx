@@ -12,6 +12,8 @@ import {
   Layers,
   RefreshCw,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -30,6 +32,7 @@ export const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [queuePage, setQueuePage] = useState(1);
   const navigate = useNavigate();
 
   const fetchMetrics = async (isManual = false) => {
@@ -93,7 +96,14 @@ export const DashboardPage: React.FC = () => {
     p99DurationMs: 0,
   };
 
+  const QUEUES_PER_PAGE = 20;
+
   const queueDepths = metrics?.queueDepths || [];
+  const totalQueuePages = Math.ceil(queueDepths.length / QUEUES_PER_PAGE) || 1;
+  const paginatedQueues = queueDepths.slice(
+    (queuePage - 1) * QUEUES_PER_PAGE,
+    queuePage * QUEUES_PER_PAGE
+  );
 
   // Latency chart data from true percentiles
   const latencyData = [
@@ -328,7 +338,7 @@ export const DashboardPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
-                {queueDepths.map((q: any) => (
+                {paginatedQueues.map((q: any) => (
                   <tr key={q.queueId} className="hover:bg-gray-850/50 transition-colors">
                     <td className="py-3.5 px-4 font-semibold text-white">{q.queueName}</td>
                     <td className="py-3.5 px-4 text-gray-300">P{q.priority}</td>
@@ -354,6 +364,39 @@ export const DashboardPage: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {queueDepths.length > QUEUES_PER_PAGE && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-4 border-t border-gray-800 text-xs text-gray-400">
+            <div>
+              Showing <span className="text-white font-semibold">{(queuePage - 1) * QUEUES_PER_PAGE + 1}</span> to{' '}
+              <span className="text-white font-semibold">
+                {Math.min(queuePage * QUEUES_PER_PAGE, queueDepths.length)}
+              </span>{' '}
+              of <span className="text-white font-semibold">{queueDepths.length}</span> queues
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setQueuePage((prev) => Math.max(1, prev - 1))}
+                disabled={queuePage <= 1}
+                className="px-2.5 py-1.5 rounded-lg border border-gray-800 bg-gray-800/60 hover:bg-gray-800 text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Previous</span>
+              </button>
+              <span className="px-2 text-gray-300 font-medium">
+                Page {queuePage} of {totalQueuePages}
+              </span>
+              <button
+                onClick={() => setQueuePage((prev) => Math.min(totalQueuePages, prev + 1))}
+                disabled={queuePage >= totalQueuePages}
+                className="px-2.5 py-1.5 rounded-lg border border-gray-800 bg-gray-800/60 hover:bg-gray-800 text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+              >
+                <span>Next</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         )}
       </div>

@@ -27,7 +27,7 @@ export function createApp(): Application {
   );
   app.use(
     cors({
-      origin: (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(','),
+      origin: (process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN ?? 'http://localhost:5173').split(','),
       credentials: true,
       exposedHeaders: ['X-Request-Id'],
     })

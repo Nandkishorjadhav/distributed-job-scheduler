@@ -10,20 +10,26 @@ let redisClient: Redis | null = null;
 export function getRedisClient(): Redis {
   if (redisClient) return redisClient;
 
-  redisClient = new Redis({
-    host: process.env.REDIS_HOST ?? 'localhost',
-    port: Number(process.env.REDIS_PORT ?? 6379),
-    password: process.env.REDIS_PASSWORD,
-    maxRetriesPerRequest: 3,
-    retryStrategy(times) {
-      if (times > 10) {
-        logger.error('Redis: unable to reconnect after 10 attempts');
-        return null; // stop retrying
-      }
-      return Math.min(times * 200, 3000);
-    },
-    lazyConnect: true,
-  });
+  if (process.env.REDIS_URL) {
+    redisClient = new Redis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: 3,
+      retryStrategy(times) {
+        if (times > 10) return null;
+        return Math.min(times * 200, 3000);
+      },
+    });
+  } else {
+    redisClient = new Redis({
+      host: process.env.REDIS_HOST ?? 'localhost',
+      port: Number(process.env.REDIS_PORT ?? 6379),
+      password: process.env.REDIS_PASSWORD || undefined,
+      maxRetriesPerRequest: 3,
+      retryStrategy(times) {
+        if (times > 10) return null;
+        return Math.min(times * 200, 3000);
+      },
+    });
+  }
 
   redisClient.on('connect', () => {
     logger.info('Redis connected');
