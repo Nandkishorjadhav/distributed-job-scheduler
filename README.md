@@ -131,5 +131,7 @@ docs/                  Database and architecture documentation
 - **Retry Policy System**: [docs/08_retry_policy_system.md](docs/08_retry_policy_system.md)
 - **Dead Letter Queue (DLQ)**: [docs/09_dead_letter_queue.md](docs/09_dead_letter_queue.md)
 - **System Overview & Verification Playbook**: [docs/10_system_overview_and_verification.md](docs/10_system_overview_and_verification.md)
+- **Scheduler Service Engine**: [docs/11_scheduler_service.md](docs/11_scheduler_service.md)
+- **Worker Heartbeat Monitoring**: [docs/12_worker_heartbeat_monitoring.md](docs/12_worker_heartbeat_monitoring.md)
 
 

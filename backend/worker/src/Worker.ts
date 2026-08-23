@@ -117,7 +117,9 @@ export class Worker {
    */
   async sendHeartbeat(): Promise<void> {
     if (!this.id) return;
-    const res = await this.workerRepo.heartbeat(this.id, this.activeJobCount);
+    const res = await this.workerRepo.heartbeat(this.id, {
+      currentJobCount: this.activeJobCount,
+    });
     if (res) {
       this.lastHeartbeat = new Date();
     }
