@@ -37,12 +37,20 @@
     "docker:logs": "docker-compose logs -f",
     "docker:build": "docker-compose build"
   },
+  "dependencies": {
+    "@types/node": "^20.14.0",
+    "@types/pg": "^8.11.6",
+    "typescript": "^5.5.0"
+  },
   "devDependencies": {
     "prettier": "^3.3.0",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
-    "eslint": "^8.57.0"
-    ,"turbo": "^2.10.1"
+    "eslint": "^8.57.0",
+    "turbo": "^2.10.1",
+    "@types/node": "^20.14.0",
+    "@types/pg": "^8.11.6",
+    "typescript": "^5.5.0"
   },
   "engines": {
     "node": "20.x",
