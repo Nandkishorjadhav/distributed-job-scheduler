@@ -1,11 +1,4 @@
--- ============================================================
--- Migration 002: Complete Schema Redesign
--- Distributed Job Scheduler
--- ============================================================
--- Run AFTER 001_initial_schema.sql.
--- This migration drops and replaces the initial schema with a
--- fully normalized, production-grade design.
--- ============================================================
+
 
 BEGIN;
 
