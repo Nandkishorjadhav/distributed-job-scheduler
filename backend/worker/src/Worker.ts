@@ -46,7 +46,10 @@ export class Worker {
   private claimService: JobClaimService;
   public readonly handlerRegistry: JobHandlerRegistry;
 
-  constructor(private readonly pool: Pool, options: WorkerOptions) {
+  constructor(
+    private readonly pool: Pool,
+    options: WorkerOptions
+  ) {
     this.projectId = options.projectId;
     this.queueId = options.queueId;
     this.concurrency = options.concurrency ?? 5;
@@ -99,7 +102,9 @@ export class Worker {
     this.isRunning = true;
     this.isDraining = false;
 
-    logger.info(`Worker [${this.id}] started on ${this.hostname} (PID: ${this.pid}, Concurrency: ${this.concurrency})`);
+    logger.info(
+      `Worker [${this.id}] started on ${this.hostname} (PID: ${this.pid}, Concurrency: ${this.concurrency})`
+    );
 
     // 2. Start heartbeat loop
     this.heartbeatInterval = setInterval(() => {
@@ -153,11 +158,7 @@ export class Worker {
     }
 
     try {
-      const claimedJobs = await this.claimService.claimJobs(
-        this.id,
-        availableSlots,
-        this.queueId
-      );
+      const claimedJobs = await this.claimService.claimJobs(this.id, availableSlots, this.queueId);
 
       if (claimedJobs.length > 0) {
         for (const job of claimedJobs) {
@@ -184,7 +185,9 @@ export class Worker {
    * Execute a claimed job using the registered handler.
    */
   private async executeJob(job: JobResponse): Promise<void> {
-    logger.info(`Worker [${this.id}] executing job '${job.name}' (ID: ${job.id}, Attempt: ${job.attemptCount})`);
+    logger.info(
+      `Worker [${this.id}] executing job '${job.name}' (ID: ${job.id}, Attempt: ${job.attemptCount})`
+    );
 
     const handler = this.handlerRegistry.getHandler(job.name);
 
@@ -237,13 +240,9 @@ export class Worker {
 
       logger.warn(`Worker [${this.id}] job '${job.name}' (ID: ${job.id}) failed: ${errorMsg}`);
 
-      // Calculate retry backoff (e.g. exponential or linear)
-      const retryDelayMs = Math.min(1000 * Math.pow(2, job.attemptCount - 1), 60000);
-
       await this.claimService.failJob(job.id, this.id, {
         message: errorMsg,
         code: errorCode,
-        retryDelayMs,
       });
     }
   }

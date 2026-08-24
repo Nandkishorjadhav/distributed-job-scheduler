@@ -188,7 +188,9 @@ export class Scheduler {
    *
    * Uses `FOR UPDATE SKIP LOCKED` for zero-conflict multi-instance safety.
    */
-  async dispatchDueRecurringJobs(batchLimit = this.batchSize): Promise<DispatchedRecurringJobSummary[]> {
+  async dispatchDueRecurringJobs(
+    batchLimit = this.batchSize
+  ): Promise<DispatchedRecurringJobSummary[]> {
     const client: PoolClient = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -217,10 +219,9 @@ export class Scheduler {
       for (const sched of dueRes.rows) {
         // 1. Check skip_if_running overlap rule
         if (sched.skip_if_running && sched.last_job_id) {
-          const lastJobRes = await client.query(
-            `SELECT status FROM jobs WHERE id = $1`,
-            [sched.last_job_id]
-          );
+          const lastJobRes = await client.query(`SELECT status FROM jobs WHERE id = $1`, [
+            sched.last_job_id,
+          ]);
 
           if (
             lastJobRes.rows.length > 0 &&
@@ -248,11 +249,7 @@ export class Scheduler {
 
         // 2. Missed Schedule Handling: calculate the upcoming run date relative to NOW()
         // If the schedule was missed (e.g. downtime), we fire the single latest execution and advance to the next future slot
-        const nextRunAt = this.calculateNextRun(
-          sched.cron_expression,
-          sched.timezone,
-          new Date()
-        );
+        const nextRunAt = this.calculateNextRun(sched.cron_expression, sched.timezone, new Date());
 
         // 3. Create the job instance in 'pending' status
         const insertJobQuery = `

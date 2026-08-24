@@ -233,11 +233,14 @@ describe('Job Domain Model & Lifecycle API Tests', () => {
     beforeAll(async () => {
       // Create a job directly and simulate failure in database
       const pool = getPool();
-      const res = await pool.query(`
+      const res = await pool.query(
+        `
         INSERT INTO jobs (queue_id, name, type, status, payload, attempt_count, max_attempts, error_message)
         VALUES ($1, 'failing-job', 'immediate', 'failed', '{}', 1, 3, 'Connection timeout')
         RETURNING id
-      `, [queueId]);
+      `,
+        [queueId]
+      );
       failedJobId = res.rows[0].id;
     });
 
@@ -293,10 +296,13 @@ describe('Job Domain Model & Lifecycle API Tests', () => {
 
     it('retrieves execution logs for a job', async () => {
       const pool = getPool();
-      await pool.query(`
+      await pool.query(
+        `
         INSERT INTO job_logs (job_id, level, message)
         VALUES ($1, 'info', 'Step 1 completed'), ($1, 'error', 'Failed at step 2')
-      `, [delayedJobId]);
+      `,
+        [delayedJobId]
+      );
 
       const response = await request(app)
         .get(`/api/v1/jobs/${delayedJobId}/logs`)

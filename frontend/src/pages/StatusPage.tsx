@@ -35,11 +35,11 @@ const API = 'http://localhost:3000';
 
 function Badge({ text, color }: { text: string; color: string }) {
   const colors: Record<string, string> = {
-    green:  'bg-green-900 text-green-300 border border-green-700',
+    green: 'bg-green-900 text-green-300 border border-green-700',
     yellow: 'bg-yellow-900 text-yellow-300 border border-yellow-700',
-    red:    'bg-red-900 text-red-300 border border-red-700',
-    blue:   'bg-blue-900 text-blue-300 border border-blue-700',
-    gray:   'bg-gray-800 text-gray-400 border border-gray-600',
+    red: 'bg-red-900 text-red-300 border border-red-700',
+    blue: 'bg-blue-900 text-blue-300 border border-blue-700',
+    gray: 'bg-gray-800 text-gray-400 border border-gray-600',
   };
   return (
     <span className={`px-2 py-0.5 rounded text-xs font-mono ${colors[color] ?? colors.gray}`}>
@@ -67,13 +67,15 @@ function StatRow({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 function methodColor(method: string): string {
-  return { GET: 'blue', POST: 'green', PATCH: 'yellow', DELETE: 'red', PUT: 'yellow' }[method] ?? 'gray';
+  return (
+    { GET: 'blue', POST: 'green', PATCH: 'yellow', DELETE: 'red', PUT: 'yellow' }[method] ?? 'gray'
+  );
 }
 
 export function StatusPage() {
-  const [health, setHealth]   = useState<HealthData | null>(null);
-  const [status, setStatus]   = useState<StatusData | null>(null);
-  const [error, setError]     = useState<string | null>(null);
+  const [health, setHealth] = useState<HealthData | null>(null);
+  const [status, setStatus] = useState<StatusData | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [lastPoll, setLastPoll] = useState<string>('');
   const [countdown, setCountdown] = useState(5);
 
@@ -95,14 +97,16 @@ export function StatusPage() {
 
   useEffect(() => {
     fetchStatus();
-    const poll  = setInterval(fetchStatus, 5000);
-    const timer = setInterval(() => setCountdown(c => (c <= 1 ? 5 : c - 1)), 1000);
-    return () => { clearInterval(poll); clearInterval(timer); };
+    const poll = setInterval(fetchStatus, 5000);
+    const timer = setInterval(() => setCountdown((c) => (c <= 1 ? 5 : c - 1)), 1000);
+    return () => {
+      clearInterval(poll);
+      clearInterval(timer);
+    };
   }, []);
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
-
       {/* ── Page title ─────────────────────────── */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">System Status</h1>
@@ -114,9 +118,13 @@ export function StatusPage() {
       {/* ── Error banner ───────────────────────── */}
       {error && (
         <div className="bg-red-950 border border-red-700 rounded-lg p-4 text-red-300 text-sm">
-          <strong>⚠ Connection Error</strong><br />
-          {error}<br /><br />
-          <strong>Fix:</strong> Open a new terminal and run:<br />
+          <strong>⚠ Connection Error</strong>
+          <br />
+          {error}
+          <br />
+          <br />
+          <strong>Fix:</strong> Open a new terminal and run:
+          <br />
           <code className="bg-red-900 px-2 py-1 rounded mt-1 inline-block text-xs">
             cd "d:\Job Scheduler\backend\api" && npm run dev
           </code>
@@ -126,17 +134,15 @@ export function StatusPage() {
       {/* ── Service status cards ────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { name: 'API Server',  port: '3000', up: !!health },
-          { name: 'PostgreSQL',  port: '5432', up: !!health },
-          { name: 'Redis',       port: '6379', up: !!health },
-          { name: 'Frontend',    port: '5173', up: true },
-        ].map(svc => (
+          { name: 'API Server', port: '3000', up: !!health },
+          { name: 'PostgreSQL', port: '5432', up: !!health },
+          { name: 'Redis', port: '6379', up: !!health },
+          { name: 'Frontend', port: '5173', up: true },
+        ].map((svc) => (
           <div
             key={svc.name}
             className={`rounded-lg p-4 border ${
-              svc.up
-                ? 'bg-green-950 border-green-800'
-                : 'bg-gray-900 border-gray-800'
+              svc.up ? 'bg-green-950 border-green-800' : 'bg-gray-900 border-gray-800'
             }`}
           >
             <div className="flex items-center gap-2 mb-1">
@@ -144,7 +150,9 @@ export function StatusPage() {
               <span className="text-sm font-medium">{svc.name}</span>
             </div>
             <div className="text-xs text-gray-500">port {svc.port}</div>
-            <div className={`text-xs mt-1 font-semibold ${svc.up ? 'text-green-400' : 'text-gray-500'}`}>
+            <div
+              className={`text-xs mt-1 font-semibold ${svc.up ? 'text-green-400' : 'text-gray-500'}`}
+            >
               {svc.up ? '● RUNNING' : '○ OFFLINE'}
             </div>
           </div>
@@ -154,29 +162,38 @@ export function StatusPage() {
       {/* ── Two-column detail grid ─────────────── */}
       {status && (
         <div className="grid md:grid-cols-2 gap-4">
-
           <Card title="API Info">
-            <StatRow label="Status"      value={<Badge text={status.api.status.toUpperCase()} color="green" />} />
-            <StatRow label="Version"     value={status.api.version} />
-            <StatRow label="Environment" value={<Badge text={status.api.environment} color="blue" />} />
-            <StatRow label="Uptime"      value={`${status.api.uptime_seconds}s`} />
-            <StatRow label="Port"        value={status.api.port} />
-            <StatRow label="PID"         value={status.api.pid} />
+            <StatRow
+              label="Status"
+              value={<Badge text={status.api.status.toUpperCase()} color="green" />}
+            />
+            <StatRow label="Version" value={status.api.version} />
+            <StatRow
+              label="Environment"
+              value={<Badge text={status.api.environment} color="blue" />}
+            />
+            <StatRow label="Uptime" value={`${status.api.uptime_seconds}s`} />
+            <StatRow label="Port" value={status.api.port} />
+            <StatRow label="PID" value={status.api.pid} />
           </Card>
 
           <Card title="Memory Usage">
-            <StatRow label="Heap Used"  value={`${status.memory.heap_used_mb} MB`} />
+            <StatRow label="Heap Used" value={`${status.memory.heap_used_mb} MB`} />
             <StatRow label="Heap Total" value={`${status.memory.heap_total_mb} MB`} />
-            <StatRow label="RSS"        value={`${status.memory.rss_mb} MB`} />
+            <StatRow label="RSS" value={`${status.memory.rss_mb} MB`} />
             <div className="mt-3">
               <div className="flex justify-between text-xs text-gray-500 mb-1">
                 <span>Heap</span>
-                <span>{status.memory.heap_used_mb} / {status.memory.heap_total_mb} MB</span>
+                <span>
+                  {status.memory.heap_used_mb} / {status.memory.heap_total_mb} MB
+                </span>
               </div>
               <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
                 <div
                   className="h-2 bg-blue-500 rounded-full transition-all"
-                  style={{ width: `${Math.min(100, (status.memory.heap_used_mb / status.memory.heap_total_mb) * 100)}%` }}
+                  style={{
+                    width: `${Math.min(100, (status.memory.heap_used_mb / status.memory.heap_total_mb) * 100)}%`,
+                  }}
                 />
               </div>
             </div>
@@ -205,16 +222,18 @@ export function StatusPage() {
                     </td>
                     <td className="py-1.5 pr-4 font-mono text-xs text-gray-300">{ep.path}</td>
                     <td className="py-1.5 pr-4">
-                      {ep.auth
-                        ? <Badge text="🔒 JWT" color="yellow" />
-                        : <Badge text="public" color="gray" />
-                      }
+                      {ep.auth ? (
+                        <Badge text="🔒 JWT" color="yellow" />
+                      ) : (
+                        <Badge text="public" color="gray" />
+                      )}
                     </td>
                     <td className="py-1.5">
-                      {ep.status === 'live'
-                        ? <Badge text="✓ live"  color="green" />
-                        : <Badge text="stub"    color="gray"  />
-                      }
+                      {ep.status === 'live' ? (
+                        <Badge text="✓ live" color="green" />
+                      ) : (
+                        <Badge text="stub" color="gray" />
+                      )}
                     </td>
                   </tr>
                 ))}

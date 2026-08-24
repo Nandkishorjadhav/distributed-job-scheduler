@@ -168,10 +168,7 @@ describe('End-to-End Retry Lifecycle & DLQ Integration Tests', () => {
     expect(fail3.finishedAt).not.toBeNull();
 
     // ── Verify Dead Letter Queue Snapshot ─────────────────────────────────────
-    const dlqRows = await pool.query(
-      `SELECT * FROM dead_letter_jobs WHERE job_id = $1`,
-      [job.id]
-    );
+    const dlqRows = await pool.query(`SELECT * FROM dead_letter_jobs WHERE job_id = $1`, [job.id]);
     expect(dlqRows.rows.length).toBe(1);
     const dlq = dlqRows.rows[0];
     expect(dlq.total_attempts).toBe(3);

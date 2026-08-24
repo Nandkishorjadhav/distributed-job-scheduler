@@ -91,7 +91,10 @@ export const SlugSchema = z
   .string()
   .min(2, 'Slug must be at least 2 characters')
   .max(64)
-  .regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, 'Slug must start and end with an alphanumeric character and contain only lowercase letters, numbers, and hyphens');
+  .regex(
+    /^[a-z0-9][a-z0-9-]*[a-z0-9]$/,
+    'Slug must start and end with an alphanumeric character and contain only lowercase letters, numbers, and hyphens'
+  );
 
 export const CreateOrgSchema = z.object({
   name: z.string().min(1).max(128),

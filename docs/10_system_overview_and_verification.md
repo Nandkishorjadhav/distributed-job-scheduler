@@ -43,77 +43,82 @@ This guide provides the master architecture overview, complete API endpoints cat
 ## 2. Master REST API Catalog
 
 ### Authentication
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :---: |
-| `POST` | `/api/v1/auth/register` | Register new user and receive JWT | No |
-| `POST` | `/api/v1/auth/login` | Login user and receive JWT | No |
-| `GET` | `/api/v1/auth/me` | Retrieve authenticated user profile | Yes |
-| `POST` | `/api/v1/auth/logout` | Logout user | Yes |
+
+| Method | Endpoint                | Description                         | Auth Required |
+| :----- | :---------------------- | :---------------------------------- | :-----------: |
+| `POST` | `/api/v1/auth/register` | Register new user and receive JWT   |      No       |
+| `POST` | `/api/v1/auth/login`    | Login user and receive JWT          |      No       |
+| `GET`  | `/api/v1/auth/me`       | Retrieve authenticated user profile |      Yes      |
+| `POST` | `/api/v1/auth/logout`   | Logout user                         |      Yes      |
 
 ### Organizations & Projects
-| Method | Endpoint | Description | Min Role |
-| :--- | :--- | :--- | :---: |
-| `POST` | `/api/v1/orgs` | Create organization | User |
-| `GET` | `/api/v1/orgs/:orgId` | Get organization details | `VIEWER` |
-| `PATCH` | `/api/v1/orgs/:orgId` | Update organization details | `ADMIN` |
-| `POST` | `/api/v1/projects` | Create project | `ADMIN` |
-| `GET` | `/api/v1/projects` | List projects (with pagination) | `VIEWER` |
-| `GET` | `/api/v1/projects/:projectId` | Get project details | `VIEWER` |
-| `PATCH` | `/api/v1/projects/:projectId`| Update project details | `ADMIN` |
-| `DELETE`| `/api/v1/projects/:projectId`| Safely delete project | `ADMIN` |
+
+| Method   | Endpoint                      | Description                     | Min Role |
+| :------- | :---------------------------- | :------------------------------ | :------: |
+| `POST`   | `/api/v1/orgs`                | Create organization             |   User   |
+| `GET`    | `/api/v1/orgs/:orgId`         | Get organization details        | `VIEWER` |
+| `PATCH`  | `/api/v1/orgs/:orgId`         | Update organization details     | `ADMIN`  |
+| `POST`   | `/api/v1/projects`            | Create project                  | `ADMIN`  |
+| `GET`    | `/api/v1/projects`            | List projects (with pagination) | `VIEWER` |
+| `GET`    | `/api/v1/projects/:projectId` | Get project details             | `VIEWER` |
+| `PATCH`  | `/api/v1/projects/:projectId` | Update project details          | `ADMIN`  |
+| `DELETE` | `/api/v1/projects/:projectId` | Safely delete project           | `ADMIN`  |
 
 ### Queues
-| Method | Endpoint | Description | Min Role |
-| :--- | :--- | :--- | :---: |
-| `POST` | `/api/v1/queues` | Create queue (priority, concurrency, DLQ) | `MEMBER` |
-| `GET` | `/api/v1/queues` | List queues (optional `?projectId=`) | `VIEWER` |
-| `GET` | `/api/v1/queues/:queueId` | Get queue details | `VIEWER` |
-| `PATCH` | `/api/v1/queues/:queueId` | Update queue configuration | `MEMBER` |
-| `POST` | `/api/v1/queues/:queueId/pause` | Pause job processing on queue | `MEMBER` |
-| `POST` | `/api/v1/queues/:queueId/resume` | Resume job processing on queue | `MEMBER` |
-| `DELETE`| `/api/v1/queues/:queueId` | Safely delete queue | `ADMIN` |
-| `GET` | `/api/v1/queues/:queueId/stats` | Real-time queue statistics | `VIEWER` |
+
+| Method   | Endpoint                         | Description                               | Min Role |
+| :------- | :------------------------------- | :---------------------------------------- | :------: |
+| `POST`   | `/api/v1/queues`                 | Create queue (priority, concurrency, DLQ) | `MEMBER` |
+| `GET`    | `/api/v1/queues`                 | List queues (optional `?projectId=`)      | `VIEWER` |
+| `GET`    | `/api/v1/queues/:queueId`        | Get queue details                         | `VIEWER` |
+| `PATCH`  | `/api/v1/queues/:queueId`        | Update queue configuration                | `MEMBER` |
+| `POST`   | `/api/v1/queues/:queueId/pause`  | Pause job processing on queue             | `MEMBER` |
+| `POST`   | `/api/v1/queues/:queueId/resume` | Resume job processing on queue            | `MEMBER` |
+| `DELETE` | `/api/v1/queues/:queueId`        | Safely delete queue                       | `ADMIN`  |
+| `GET`    | `/api/v1/queues/:queueId/stats`  | Real-time queue statistics                | `VIEWER` |
 
 ### Jobs
-| Method | Endpoint | Description | Min Role |
-| :--- | :--- | :--- | :---: |
-| `POST` | `/api/v1/queues/:queueId/jobs` | Submit job (immediate, delayed, scheduled) | `MEMBER` |
-| `POST` | `/api/v1/jobs` | Direct job submission | `MEMBER` |
-| `POST` | `/api/v1/queues/:queueId/batch` | Submit batch group of child jobs | `MEMBER` |
-| `POST` | `/api/v1/queues/:queueId/recurring`| Create recurring cron schedule | `MEMBER` |
-| `GET` | `/api/v1/jobs` / `/queues/:id/jobs`| List jobs with filtering and pagination | `VIEWER` |
-| `GET` | `/api/v1/jobs/:jobId` | Get single job details | `VIEWER` |
-| `POST` | `/api/v1/jobs/:jobId/cancel` | Cancel pending/scheduled job | `MEMBER` |
-| `POST` | `/api/v1/jobs/:jobId/retry` | Retry failed/dead job | `MEMBER` |
-| `GET` | `/api/v1/jobs/:jobId/executions` | Get execution attempt history | `VIEWER` |
-| `GET` | `/api/v1/jobs/:jobId/logs` | Stream execution logs (`?level=`) | `VIEWER` |
-| `GET` | `/api/v1/jobs/:jobId/history` | Full audit trail (job + executions + logs) | `VIEWER` |
+
+| Method | Endpoint                            | Description                                | Min Role |
+| :----- | :---------------------------------- | :----------------------------------------- | :------: |
+| `POST` | `/api/v1/queues/:queueId/jobs`      | Submit job (immediate, delayed, scheduled) | `MEMBER` |
+| `POST` | `/api/v1/jobs`                      | Direct job submission                      | `MEMBER` |
+| `POST` | `/api/v1/queues/:queueId/batch`     | Submit batch group of child jobs           | `MEMBER` |
+| `POST` | `/api/v1/queues/:queueId/recurring` | Create recurring cron schedule             | `MEMBER` |
+| `GET`  | `/api/v1/jobs` / `/queues/:id/jobs` | List jobs with filtering and pagination    | `VIEWER` |
+| `GET`  | `/api/v1/jobs/:jobId`               | Get single job details                     | `VIEWER` |
+| `POST` | `/api/v1/jobs/:jobId/cancel`        | Cancel pending/scheduled job               | `MEMBER` |
+| `POST` | `/api/v1/jobs/:jobId/retry`         | Retry failed/dead job                      | `MEMBER` |
+| `GET`  | `/api/v1/jobs/:jobId/executions`    | Get execution attempt history              | `VIEWER` |
+| `GET`  | `/api/v1/jobs/:jobId/logs`          | Stream execution logs (`?level=`)          | `VIEWER` |
+| `GET`  | `/api/v1/jobs/:jobId/history`       | Full audit trail (job + executions + logs) | `VIEWER` |
 
 ### Dead Letter Queue (DLQ)
-| Method | Endpoint | Description | Min Role |
-| :--- | :--- | :--- | :---: |
-| `GET` | `/api/v1/dlq` / `/queues/:id/dlq`| List DLQ jobs with search & filters | `VIEWER` |
-| `GET` | `/api/v1/dlq/stats` / `/queues/:id/dlq/stats` | Dashboard DLQ statistics & breakdown | `VIEWER` |
-| `GET` | `/api/v1/dlq/:dlqId` | Inspect DLQ job with attempt history & logs | `VIEWER` |
-| `POST` | `/api/v1/dlq/:dlqId/retry` | Re-queue dead job back to pending | `MEMBER` |
-| `POST` | `/api/v1/dlq/:dlqId/archive` | Mark DLQ job as archived | `MEMBER` |
-| `DELETE`| `/api/v1/dlq/:dlqId` | Permanently delete DLQ entry | `ADMIN` |
+
+| Method   | Endpoint                                      | Description                                 | Min Role |
+| :------- | :-------------------------------------------- | :------------------------------------------ | :------: |
+| `GET`    | `/api/v1/dlq` / `/queues/:id/dlq`             | List DLQ jobs with search & filters         | `VIEWER` |
+| `GET`    | `/api/v1/dlq/stats` / `/queues/:id/dlq/stats` | Dashboard DLQ statistics & breakdown        | `VIEWER` |
+| `GET`    | `/api/v1/dlq/:dlqId`                          | Inspect DLQ job with attempt history & logs | `VIEWER` |
+| `POST`   | `/api/v1/dlq/:dlqId/retry`                    | Re-queue dead job back to pending           | `MEMBER` |
+| `POST`   | `/api/v1/dlq/:dlqId/archive`                  | Mark DLQ job as archived                    | `MEMBER` |
+| `DELETE` | `/api/v1/dlq/:dlqId`                          | Permanently delete DLQ entry                | `ADMIN`  |
 
 ---
 
 ## 3. Configuration & Environment Variables
 
-| Variable | Default | Purpose |
-| :--- | :--- | :--- |
-| `DATABASE_URL` | `postgresql://postgres:password@localhost:5432/job_scheduler` | PostgreSQL connection string |
-| `REDIS_URL` | `redis://localhost:6379` | Redis connection string |
-| `JWT_SECRET` | `dev_secret_key_change_in_production` | HMAC-SHA256 JWT signature key |
-| `JWT_EXPIRES_IN` | `7d` | JWT token lifetime |
-| `API_PORT` | `3000` | Port for Express REST API |
-| `WORKER_CONCURRENCY` | `5` | Maximum concurrent jobs per worker node |
-| `WORKER_POLL_INTERVAL_MS`| `1000` | Polling interval when queues are idle |
-| `WORKER_HEARTBEAT_INTERVAL_MS`| `10000` | Worker liveness heartbeat interval |
-| `WORKER_DRAIN_TIMEOUT_MS`| `30000` | Maximum wait time during graceful draining |
+| Variable                       | Default                                                       | Purpose                                    |
+| :----------------------------- | :------------------------------------------------------------ | :----------------------------------------- |
+| `DATABASE_URL`                 | `postgresql://postgres:password@localhost:5432/job_scheduler` | PostgreSQL connection string               |
+| `REDIS_URL`                    | `redis://localhost:6379`                                      | Redis connection string                    |
+| `JWT_SECRET`                   | `dev_secret_key_change_in_production`                         | HMAC-SHA256 JWT signature key              |
+| `JWT_EXPIRES_IN`               | `7d`                                                          | JWT token lifetime                         |
+| `API_PORT`                     | `3000`                                                        | Port for Express REST API                  |
+| `WORKER_CONCURRENCY`           | `5`                                                           | Maximum concurrent jobs per worker node    |
+| `WORKER_POLL_INTERVAL_MS`      | `1000`                                                        | Polling interval when queues are idle      |
+| `WORKER_HEARTBEAT_INTERVAL_MS` | `10000`                                                       | Worker liveness heartbeat interval         |
+| `WORKER_DRAIN_TIMEOUT_MS`      | `30000`                                                       | Maximum wait time during graceful draining |
 
 ---
 
@@ -129,6 +134,7 @@ npx vitest run --reporter=verbose
 ```
 
 #### Test Suite Breakdown:
+
 1. `shared/enums.test.ts` (3 tests): Shared enums integrity.
 2. `api/health.test.ts` (3 tests): Health check and route guards.
 3. `api/auth.test.ts` (15 tests): User registration, login, logout, password hashing, JWT validation.
@@ -146,6 +152,7 @@ npx vitest run --reporter=verbose
 ### Method B: Interactive End-to-End PowerShell Script
 
 Start the API server in Terminal 1:
+
 ```powershell
 cd "d:\Job Scheduler"
 npm run dev --prefix backend/api

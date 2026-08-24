@@ -155,7 +155,8 @@ export function OrgsProjectsPage() {
         <div>
           <h1 className="text-xl font-bold text-white">Resource Management</h1>
           <p className="text-xs text-gray-400 mt-0.5">
-            Logged in as <strong className="text-blue-400">{currentUser?.name}</strong> ({currentUser?.email})
+            Logged in as <strong className="text-blue-400">{currentUser?.name}</strong> (
+            {currentUser?.email})
           </p>
         </div>
         <button
@@ -189,7 +190,8 @@ export function OrgsProjectsPage() {
                   value={newOrgName}
                   onChange={(e) => {
                     setNewOrgName(e.target.value);
-                    if (!newOrgSlug) setNewOrgSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'));
+                    if (!newOrgSlug)
+                      setNewOrgSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'));
                   }}
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
                 />
@@ -215,7 +217,9 @@ export function OrgsProjectsPage() {
           </div>
 
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <h2 className="text-base font-bold text-white mb-3">Your Organizations ({orgs.length})</h2>
+            <h2 className="text-base font-bold text-white mb-3">
+              Your Organizations ({orgs.length})
+            </h2>
             {orgs.length === 0 ? (
               <p className="text-xs text-gray-500">No organizations found. Create one above!</p>
             ) : (
@@ -259,7 +263,9 @@ export function OrgsProjectsPage() {
                 )}
                 <form onSubmit={handleCreateProject} className="space-y-3">
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1 font-semibold">Project Name</label>
+                    <label className="block text-xs text-gray-400 mb-1 font-semibold">
+                      Project Name
+                    </label>
                     <input
                       type="text"
                       required
@@ -267,13 +273,16 @@ export function OrgsProjectsPage() {
                       value={newProjName}
                       onChange={(e) => {
                         setNewProjName(e.target.value);
-                        if (!newProjSlug) setNewProjSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'));
+                        if (!newProjSlug)
+                          setNewProjSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'));
                       }}
                       className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1 font-semibold">Project Slug</label>
+                    <label className="block text-xs text-gray-400 mb-1 font-semibold">
+                      Project Slug
+                    </label>
                     <input
                       type="text"
                       required
@@ -284,7 +293,9 @@ export function OrgsProjectsPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1 font-semibold">Description (Optional)</label>
+                    <label className="block text-xs text-gray-400 mb-1 font-semibold">
+                      Description (Optional)
+                    </label>
                     <input
                       type="text"
                       placeholder="e.g. Core platform services"
@@ -303,9 +314,13 @@ export function OrgsProjectsPage() {
               </div>
 
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-                <h2 className="text-base font-bold text-white mb-3">Projects in Selected Org ({projects.length})</h2>
+                <h2 className="text-base font-bold text-white mb-3">
+                  Projects in Selected Org ({projects.length})
+                </h2>
                 {projects.length === 0 ? (
-                  <p className="text-xs text-gray-500">No projects found in this organization. Create one above!</p>
+                  <p className="text-xs text-gray-500">
+                    No projects found in this organization. Create one above!
+                  </p>
                 ) : (
                   <div className="space-y-3">
                     {projects.map((proj) => (

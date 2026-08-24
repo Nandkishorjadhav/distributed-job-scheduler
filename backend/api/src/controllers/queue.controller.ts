@@ -1,5 +1,10 @@
 import { Response, NextFunction } from 'express';
-import { OrgRole, CreateQueueInput, UpdateQueueInput, QueueQueryInput } from '@job-scheduler/shared';
+import {
+  OrgRole,
+  CreateQueueInput,
+  UpdateQueueInput,
+  QueueQueryInput,
+} from '@job-scheduler/shared';
 import { QueueRepository, ProjectRepository, getPool } from '@job-scheduler/backend-shared';
 import { AuthenticatedRequest } from '../middleware/authenticate';
 import { checkOrgPermission } from '../middleware/authorization';
@@ -34,7 +39,11 @@ export async function createQueue(
     const existingQueue = await queueRepo.findByProjectAndName(projectId, name);
 
     if (existingQueue) {
-      throw new AppError(409, 'A queue with this name already exists in this project', 'QUEUE_NAME_EXISTS');
+      throw new AppError(
+        409,
+        'A queue with this name already exists in this project',
+        'QUEUE_NAME_EXISTS'
+      );
     }
 
     const queue = await queueRepo.create({
@@ -148,7 +157,8 @@ export async function updateQueue(
     }
 
     const { queueId } = req.params;
-    const { name, description, priority, concurrencyLimit, dlqEnabled } = req.body as UpdateQueueInput;
+    const { name, description, priority, concurrencyLimit, dlqEnabled } =
+      req.body as UpdateQueueInput;
 
     const queueRepo = getQueueRepository();
     const existingQueue = await queueRepo.findById(queueId);
@@ -168,7 +178,11 @@ export async function updateQueue(
     if (name) {
       const nameCheck = await queueRepo.findByProjectAndName(existingQueue.projectId, name);
       if (nameCheck && nameCheck.id !== queueId) {
-        throw new AppError(409, 'A queue with this name already exists in this project', 'QUEUE_NAME_EXISTS');
+        throw new AppError(
+          409,
+          'A queue with this name already exists in this project',
+          'QUEUE_NAME_EXISTS'
+        );
       }
     }
 

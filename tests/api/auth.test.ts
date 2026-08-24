@@ -19,9 +19,7 @@ describe('Auth Module Integration Tests', () => {
 
   describe('User Registration', () => {
     it('registers a new user successfully', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/register')
-        .send(testUser);
+      const response = await request(app).post('/api/v1/auth/register').send(testUser);
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
@@ -36,9 +34,7 @@ describe('Auth Module Integration Tests', () => {
     });
 
     it('rejects duplicate email registration with 409 Conflict', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/register')
-        .send(testUser);
+      const response = await request(app).post('/api/v1/auth/register').send(testUser);
 
       expect(response.status).toBe(409);
       expect(response.body.success).toBe(false);
@@ -46,13 +42,11 @@ describe('Auth Module Integration Tests', () => {
     });
 
     it('rejects invalid email format with 400 Bad Request', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          email: 'invalid-email-format',
-          password: 'password123',
-          name: 'Invalid Email User',
-        });
+      const response = await request(app).post('/api/v1/auth/register').send({
+        email: 'invalid-email-format',
+        password: 'password123',
+        name: 'Invalid Email User',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
@@ -76,12 +70,10 @@ describe('Auth Module Integration Tests', () => {
 
   describe('User Login', () => {
     it('logs in successfully with valid credentials', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/login')
-        .send({
-          email: testUser.email,
-          password: testUser.password,
-        });
+      const response = await request(app).post('/api/v1/auth/login').send({
+        email: testUser.email,
+        password: testUser.password,
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -91,12 +83,10 @@ describe('Auth Module Integration Tests', () => {
     });
 
     it('rejects login with wrong password', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/login')
-        .send({
-          email: testUser.email,
-          password: 'wrongpassword',
-        });
+      const response = await request(app).post('/api/v1/auth/login').send({
+        email: testUser.email,
+        password: 'wrongpassword',
+      });
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
@@ -104,12 +94,10 @@ describe('Auth Module Integration Tests', () => {
     });
 
     it('rejects login with non-existent email', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/login')
-        .send({
-          email: 'nonexistent_user_99999@example.com',
-          password: 'password123',
-        });
+      const response = await request(app).post('/api/v1/auth/login').send({
+        email: 'nonexistent_user_99999@example.com',
+        password: 'password123',
+      });
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
@@ -130,8 +118,7 @@ describe('Auth Module Integration Tests', () => {
     });
 
     it('rejects access to /api/v1/auth/me when token is missing', async () => {
-      const response = await request(app)
-        .get('/api/v1/auth/me');
+      const response = await request(app).get('/api/v1/auth/me');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
@@ -139,8 +126,7 @@ describe('Auth Module Integration Tests', () => {
     });
 
     it('rejects access to queue management API /api/v1/queues when token is missing', async () => {
-      const response = await request(app)
-        .get('/api/v1/queues');
+      const response = await request(app).get('/api/v1/queues');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
@@ -148,8 +134,7 @@ describe('Auth Module Integration Tests', () => {
     });
 
     it('rejects access to project management API /api/v1/projects when token is missing', async () => {
-      const response = await request(app)
-        .get('/api/v1/projects');
+      const response = await request(app).get('/api/v1/projects');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
@@ -157,8 +142,7 @@ describe('Auth Module Integration Tests', () => {
     });
 
     it('rejects access to worker management API /api/v1/workers when token is missing', async () => {
-      const response = await request(app)
-        .get('/api/v1/workers');
+      const response = await request(app).get('/api/v1/workers');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
@@ -178,11 +162,9 @@ describe('Auth Module Integration Tests', () => {
     });
 
     it('rejects request with expired token', async () => {
-      const expiredToken = jwt.sign(
-        { id: testUserId, email: testUser.email },
-        JWT_SECRET,
-        { expiresIn: '-1s' }
-      );
+      const expiredToken = jwt.sign({ id: testUserId, email: testUser.email }, JWT_SECRET, {
+        expiresIn: '-1s',
+      });
 
       const response = await request(app)
         .get('/api/v1/auth/me')

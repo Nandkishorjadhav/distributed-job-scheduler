@@ -16,9 +16,8 @@ declare global {
  */
 export function requestIdMiddleware(req: Request, res: Response, next: NextFunction): void {
   const incomingId = req.headers['x-request-id'] || req.headers['x-correlation-id'];
-  const requestId = (typeof incomingId === 'string' && incomingId.trim().length > 0)
-    ? incomingId.trim()
-    : uuidv4();
+  const requestId =
+    typeof incomingId === 'string' && incomingId.trim().length > 0 ? incomingId.trim() : uuidv4();
 
   req.id = requestId;
   res.setHeader('X-Request-Id', requestId);

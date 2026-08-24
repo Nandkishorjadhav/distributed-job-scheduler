@@ -62,7 +62,11 @@ async function checkOrgPermission(
 /**
  * Verify queue access for authenticated user.
  */
-async function verifyQueueAccess(userId: string, queueId: string, minRole: OrgRole = OrgRole.VIEWER): Promise<void> {
+async function verifyQueueAccess(
+  userId: string,
+  queueId: string,
+  minRole: OrgRole = OrgRole.VIEWER
+): Promise<void> {
   const pool = getPool();
   const res = await pool.query(
     `SELECT q.project_id, p.organization_id
@@ -106,9 +110,10 @@ export async function listDlqJobs(
 
     if (projectId) {
       const proj = await getProjectRepository().findById(projectId);
-      if (proj) {
-        await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
+      if (!proj) {
+        throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
       }
+      await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
     }
 
     const repo = getDlqRepository();
@@ -158,9 +163,10 @@ export async function getDlqStats(
 
     if (projectId) {
       const proj = await getProjectRepository().findById(projectId);
-      if (proj) {
-        await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
+      if (!proj) {
+        throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
       }
+      await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
     }
 
     const repo = getDlqRepository();
@@ -204,9 +210,10 @@ export async function getDlqJob(
     // Verify project permission
     if (dlq.projectId) {
       const proj = await getProjectRepository().findById(dlq.projectId);
-      if (proj) {
-        await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
+      if (!proj) {
+        throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
       }
+      await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
     }
 
     // Fetch full execution history and logs for inspection
@@ -252,9 +259,10 @@ export async function requeueDlqJob(
 
     if (dlq.projectId) {
       const proj = await getProjectRepository().findById(dlq.projectId);
-      if (proj) {
-        await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.MEMBER);
+      if (!proj) {
+        throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
       }
+      await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.MEMBER);
     }
 
     const result = await repo.requeue(dlqId, req.user.id);
@@ -292,9 +300,10 @@ export async function archiveDlqJob(
 
     if (dlq.projectId) {
       const proj = await getProjectRepository().findById(dlq.projectId);
-      if (proj) {
-        await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.MEMBER);
+      if (!proj) {
+        throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
       }
+      await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.MEMBER);
     }
 
     const updated = await repo.archive(dlqId, req.user.id);
@@ -332,9 +341,10 @@ export async function deleteDlqJob(
 
     if (dlq.projectId) {
       const proj = await getProjectRepository().findById(dlq.projectId);
-      if (proj) {
-        await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.ADMIN);
+      if (!proj) {
+        throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
       }
+      await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.ADMIN);
     }
 
     await repo.delete(dlqId);

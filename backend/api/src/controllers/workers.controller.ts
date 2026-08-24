@@ -1,11 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../middleware/authenticate';
 import { AppError } from '../middleware/errorHandler';
-import {
-  WorkerRepository,
-  ProjectRepository,
-  getPool,
-} from '@job-scheduler/backend-shared';
+import { WorkerRepository, ProjectRepository, getPool } from '@job-scheduler/backend-shared';
 import { OrgRole, WorkerStatus } from '@job-scheduler/shared';
 
 let workerRepo: WorkerRepository;
@@ -74,9 +70,10 @@ export async function listWorkers(
 
     if (projectId) {
       const proj = await getProjectRepository().findById(projectId);
-      if (proj) {
-        await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
+      if (!proj) {
+        throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
       }
+      await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
     }
 
     const repo = getWorkerRepository();
@@ -121,9 +118,10 @@ export async function getWorker(
     }
 
     const proj = await getProjectRepository().findById(worker.projectId);
-    if (proj) {
-      await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
+    if (!proj) {
+      throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
     }
+    await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
 
     const [recentHeartbeats, runningJobs] = await Promise.all([
       repo.getRecentHeartbeats(workerId, 20),
@@ -207,9 +205,10 @@ export async function sendWorkerHeartbeat(
     }
 
     const proj = await getProjectRepository().findById(worker.projectId);
-    if (proj) {
-      await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.MEMBER);
+    if (!proj) {
+      throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
     }
+    await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.MEMBER);
 
     const updated = await repo.heartbeat(workerId, {
       currentJobCount,
@@ -248,9 +247,10 @@ export async function stopWorker(
     }
 
     const proj = await getProjectRepository().findById(worker.projectId);
-    if (proj) {
-      await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.MEMBER);
+    if (!proj) {
+      throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
     }
+    await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.MEMBER);
 
     await repo.deregister(workerId);
 

@@ -4,13 +4,9 @@ import jwt from 'jsonwebtoken';
 import { RegisterInput, LoginInput } from '@job-scheduler/shared';
 import { UserRepository, getPool } from '@job-scheduler/backend-shared';
 import { AppError } from '../middleware/errorHandler';
-import { AuthenticatedRequest } from '../middleware/authenticate';
+import { AuthenticatedRequest, getJwtSecret } from '../middleware/authenticate';
 
 const getUserRepository = () => new UserRepository(getPool());
-
-function getJwtSecret(): string {
-  return process.env.JWT_SECRET || 'dev_secret_key_change_in_production_32char';
-}
 
 export async function register(
   req: Request<object, object, RegisterInput>,
@@ -30,11 +26,10 @@ export async function register(
     const user = await userRepo.create({ email, passwordHash, name });
 
     const secret = getJwtSecret();
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      secret,
-      { expiresIn: '1d' }
-    );
+    const token = jwt.sign({ id: user.id, email: user.email }, secret, {
+      algorithm: 'HS256',
+      expiresIn: '1d',
+    });
 
     res.status(201).json({
       success: true,
@@ -63,7 +58,11 @@ export async function login(
     }
 
     if (!userRecord.is_active) {
-      throw new AppError(403, 'Your account has been deactivated. Please contact an administrator.', 'ACCOUNT_INACTIVE');
+      throw new AppError(
+        403,
+        'Your account has been deactivated. Please contact an administrator.',
+        'ACCOUNT_INACTIVE'
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(password, userRecord.password_hash);
@@ -74,11 +73,10 @@ export async function login(
     await userRepo.updateLastLogin(userRecord.id);
 
     const secret = getJwtSecret();
-    const token = jwt.sign(
-      { id: userRecord.id, email: userRecord.email },
-      secret,
-      { expiresIn: '1d' }
-    );
+    const token = jwt.sign({ id: userRecord.id, email: userRecord.email }, secret, {
+      algorithm: 'HS256',
+      expiresIn: '1d',
+    });
 
     const user = {
       id: userRecord.id,

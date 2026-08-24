@@ -36,19 +36,23 @@ describe('Worker Heartbeat Monitoring API Tests', () => {
 
   beforeAll(async () => {
     // 1. Register users
-    const ownerRes = await request(app).post('/api/v1/auth/register').send({
-      email: `worker_owner_${time}@example.com`,
-      password: 'password123',
-      name: 'Worker Owner User',
-    });
+    const ownerRes = await request(app)
+      .post('/api/v1/auth/register')
+      .send({
+        email: `worker_owner_${time}@example.com`,
+        password: 'password123',
+        name: 'Worker Owner User',
+      });
     tokenOwner = ownerRes.body.data.token;
     userIdOwner = ownerRes.body.data.user.id;
 
-    const strangerRes = await request(app).post('/api/v1/auth/register').send({
-      email: `worker_stranger_${time}@example.com`,
-      password: 'password123',
-      name: 'Worker Stranger User',
-    });
+    const strangerRes = await request(app)
+      .post('/api/v1/auth/register')
+      .send({
+        email: `worker_stranger_${time}@example.com`,
+        password: 'password123',
+        name: 'Worker Stranger User',
+      });
     tokenStranger = strangerRes.body.data.token;
 
     // 2. Create Org & Project
@@ -61,7 +65,11 @@ describe('Worker Heartbeat Monitoring API Tests', () => {
     const projRes = await request(app)
       .post('/api/v1/projects')
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ organizationId: orgId, name: 'Worker Telemetry Project', slug: `worker-proj-${time}` });
+      .send({
+        organizationId: orgId,
+        name: 'Worker Telemetry Project',
+        slug: `worker-proj-${time}`,
+      });
     projectId = projRes.body.data.project.id;
 
     const queueRes = await request(app)

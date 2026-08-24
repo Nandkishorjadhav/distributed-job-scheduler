@@ -1,5 +1,10 @@
 import { Response, NextFunction } from 'express';
-import { OrgRole, CreateProjectInput, UpdateProjectInput, ProjectQueryInput } from '@job-scheduler/shared';
+import {
+  OrgRole,
+  CreateProjectInput,
+  UpdateProjectInput,
+  ProjectQueryInput,
+} from '@job-scheduler/shared';
 import { ProjectRepository, getPool } from '@job-scheduler/backend-shared';
 import { AuthenticatedRequest } from '../middleware/authenticate';
 import { checkOrgPermission } from '../middleware/authorization';
@@ -25,7 +30,11 @@ export async function createProject(
     const existingSlug = await projectRepo.findByOrgAndSlug(organizationId, slug);
 
     if (existingSlug) {
-      throw new AppError(409, 'A project with this slug already exists in this organization', 'PROJECT_SLUG_EXISTS');
+      throw new AppError(
+        409,
+        'A project with this slug already exists in this organization',
+        'PROJECT_SLUG_EXISTS'
+      );
     }
 
     const project = await projectRepo.create({
@@ -54,7 +63,8 @@ export async function listProjects(
       throw new AppError(401, 'Authentication required', 'UNAUTHORIZED');
     }
 
-    const query = (req as AuthenticatedRequest & { parsedQuery: ProjectQueryInput }).parsedQuery || {
+    const query = (req as AuthenticatedRequest & { parsedQuery: ProjectQueryInput })
+      .parsedQuery || {
       page: 1,
       pageSize: 20,
     };
@@ -66,7 +76,12 @@ export async function listProjects(
     }
 
     const projectRepo = getProjectRepository();
-    const { data, total } = await projectRepo.listByUser(req.user.id, page, pageSize, organizationId);
+    const { data, total } = await projectRepo.listByUser(
+      req.user.id,
+      page,
+      pageSize,
+      organizationId
+    );
 
     const totalPages = Math.ceil(total / pageSize) || 1;
 
@@ -139,7 +154,11 @@ export async function updateProject(
     if (slug) {
       const slugCheck = await projectRepo.findByOrgAndSlug(existingProject.organizationId, slug);
       if (slugCheck && slugCheck.id !== projectId) {
-        throw new AppError(409, 'A project with this slug already exists in this organization', 'PROJECT_SLUG_EXISTS');
+        throw new AppError(
+          409,
+          'A project with this slug already exists in this organization',
+          'PROJECT_SLUG_EXISTS'
+        );
       }
     }
 
@@ -177,7 +196,11 @@ export async function deleteProject(
     const deleteResult = await projectRepo.delete(projectId);
 
     if (!deleteResult.success) {
-      throw new AppError(409, deleteResult.reason || 'Cannot delete project', 'PROJECT_DELETE_FAILED');
+      throw new AppError(
+        409,
+        deleteResult.reason || 'Cannot delete project',
+        'PROJECT_DELETE_FAILED'
+      );
     }
 
     res.status(200).json({

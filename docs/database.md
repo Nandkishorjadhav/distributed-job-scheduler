@@ -19,18 +19,18 @@ z# Database Design
 
 ## Design Principles
 
-| Principle | Decision |
-|---|---|
-| **PostgreSQL as source of truth** | All job state lives in PG. Redis is only used for leader election and pub/sub. |
-| **Atomic job claiming** | `SELECT … FOR UPDATE SKIP LOCKED` — no application-level locking needed |
-| **Normalized retry policies** | Separate `retry_policies` table instead of JSONB blob — queryable, reusable, auditable |
-| **Execution history separated** | `job_executions` is one row per attempt, `jobs` is one row per logical job |
-| **BIGSERIAL for high-volume logs** | `job_logs.id` is BIGSERIAL not UUID — avoids random index page splits at high insert rates |
-| **Partial indexes everywhere** | Indexes on `jobs` use `WHERE status = 'pending'` etc. — keeps index size tiny as table grows |
-| **GENERATED columns** | `job_executions.duration_ms` is computed from timestamps — always consistent, zero maintenance |
-| **Batch counters via trigger** | `batch_groups` counters stay accurate without application bookkeeping |
-| **Deliberate CASCADE rules** | Deleting an org cascades to projects → queues → jobs. Worker death sets `worker_id = NULL` (not cascade) so jobs are re-claimable |
-| **Snapshots in DLQ** | `dead_letter_jobs` stores a payload + error snapshot so DLQ APIs don't need to JOIN back to `jobs` |
+| Principle                          | Decision                                                                                                                          |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **PostgreSQL as source of truth**  | All job state lives in PG. Redis is only used for leader election and pub/sub.                                                    |
+| **Atomic job claiming**            | `SELECT … FOR UPDATE SKIP LOCKED` — no application-level locking needed                                                           |
+| **Normalized retry policies**      | Separate `retry_policies` table instead of JSONB blob — queryable, reusable, auditable                                            |
+| **Execution history separated**    | `job_executions` is one row per attempt, `jobs` is one row per logical job                                                        |
+| **BIGSERIAL for high-volume logs** | `job_logs.id` is BIGSERIAL not UUID — avoids random index page splits at high insert rates                                        |
+| **Partial indexes everywhere**     | Indexes on `jobs` use `WHERE status = 'pending'` etc. — keeps index size tiny as table grows                                      |
+| **GENERATED columns**              | `job_executions.duration_ms` is computed from timestamps — always consistent, zero maintenance                                    |
+| **Batch counters via trigger**     | `batch_groups` counters stay accurate without application bookkeeping                                                             |
+| **Deliberate CASCADE rules**       | Deleting an org cascades to projects → queues → jobs. Worker death sets `worker_id = NULL` (not cascade) so jobs are re-claimable |
+| **Snapshots in DLQ**               | `dead_letter_jobs` stores a payload + error snapshot so DLQ APIs don't need to JOIN back to `jobs`                                |
 
 ---
 
@@ -338,76 +338,83 @@ erDiagram
 ## Table Reference
 
 ### `users`
+
 Root authentication entity. One user can belong to many organisations.
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | UUID PK | `gen_random_uuid()` |
-| `email` | VARCHAR(255) UNIQUE NOT NULL | Checked by regex |
-| `password_hash` | VARCHAR(255) NOT NULL | bcrypt, cost ≥ 12 |
-| `is_active` | BOOLEAN | `FALSE` = soft-deleted |
-| `last_login_at` | TIMESTAMPTZ | Updated on successful auth |
+| Column          | Type                         | Notes                      |
+| --------------- | ---------------------------- | -------------------------- |
+| `id`            | UUID PK                      | `gen_random_uuid()`        |
+| `email`         | VARCHAR(255) UNIQUE NOT NULL | Checked by regex           |
+| `password_hash` | VARCHAR(255) NOT NULL        | bcrypt, cost ≥ 12          |
+| `is_active`     | BOOLEAN                      | `FALSE` = soft-deleted     |
+| `last_login_at` | TIMESTAMPTZ                  | Updated on successful auth |
 
 ---
 
 ### `organizations`
+
 Top-level multi-tenant boundary. All resources belong to an org.
 
-| Column | Type | Notes |
-|---|---|---|
+| Column | Type               | Notes                            |
+| ------ | ------------------ | -------------------------------- |
 | `slug` | VARCHAR(64) UNIQUE | Lowercase alphanumeric + hyphens |
 
 ---
 
 ### `organization_members`
+
 Many-to-many: users ↔ organizations with RBAC.
 
-| Role | Description |
-|---|---|
-| `owner` | Full control, cannot be removed |
-| `admin` | Manage projects and queues |
-| `member` | Submit jobs, view results |
-| `viewer` | Read-only |
+| Role     | Description                     |
+| -------- | ------------------------------- |
+| `owner`  | Full control, cannot be removed |
+| `admin`  | Manage projects and queues      |
+| `member` | Submit jobs, view results       |
+| `viewer` | Read-only                       |
 
 ---
 
 ### `retry_policies`
+
 Normalized retry configuration. Referenced by queues and scheduled_jobs.
 
-| Strategy | Delay Formula |
-|---|---|
-| `fixed` | always `initial_delay_ms` |
-| `linear` | `initial_delay_ms × attempt_number` |
+| Strategy      | Delay Formula                                                     |
+| ------------- | ----------------------------------------------------------------- |
+| `fixed`       | always `initial_delay_ms`                                         |
+| `linear`      | `initial_delay_ms × attempt_number`                               |
 | `exponential` | `min(initial_delay_ms × multiplier^(n-1), max_delay_ms) ± jitter` |
 
 ---
 
 ### `queues`
+
 Primary throughput and isolation boundary.
 
-| Column | Notes |
-|---|---|
-| `priority` | 1=highest, 10=lowest. Cross-queue ordering by workers |
-| `concurrency_limit` | Max simultaneous running jobs across **all** workers |
-| `paused_at` | CHECK constraint: must be set iff `status = 'paused'` |
-| `dlq_enabled` | When TRUE, dead jobs move to `dead_letter_jobs` |
+| Column              | Notes                                                 |
+| ------------------- | ----------------------------------------------------- |
+| `priority`          | 1=highest, 10=lowest. Cross-queue ordering by workers |
+| `concurrency_limit` | Max simultaneous running jobs across **all** workers  |
+| `paused_at`         | CHECK constraint: must be set iff `status = 'paused'` |
+| `dlq_enabled`       | When TRUE, dead jobs move to `dead_letter_jobs`       |
 
 ---
 
 ### `jobs` ⚡ High-volume
+
 One row per submitted job. The most-queried table in the system.
 
-| Column | Notes |
-|---|---|
-| `status` | FSM: `pending → running → completed/failed → dead` |
-| `priority` | Job-level priority overrides queue priority |
-| `scheduled_at` | `NULL` = immediate. Set for delayed/scheduled/recurring |
-| `next_attempt_at` | Set after failure. Worker skips if in the future |
-| `attempt_count` | Incremented on each claim. `≤ max_attempts` (CHECK) |
-| `worker_id` | `SET NULL` on worker death — makes job re-claimable |
-| `run_at` | Stamped when `status → running`. Used for wait-time metrics |
+| Column            | Notes                                                       |
+| ----------------- | ----------------------------------------------------------- |
+| `status`          | FSM: `pending → running → completed/failed → dead`          |
+| `priority`        | Job-level priority overrides queue priority                 |
+| `scheduled_at`    | `NULL` = immediate. Set for delayed/scheduled/recurring     |
+| `next_attempt_at` | Set after failure. Worker skips if in the future            |
+| `attempt_count`   | Incremented on each claim. `≤ max_attempts` (CHECK)         |
+| `worker_id`       | `SET NULL` on worker death — makes job re-claimable         |
+| `run_at`          | Stamped when `status → running`. Used for wait-time metrics |
 
 **Job FSM:**
+
 ```
                     ┌─────────────────────────────────────────────┐
                     │                                             ▼
@@ -423,74 +430,78 @@ One row per submitted job. The most-queried table in the system.
 ---
 
 ### `job_executions`
+
 One row per attempt. Separates retry history from the job itself.
 
-| Column | Notes |
-|---|---|
-| `attempt_number` | 1-based. UNIQUE with `job_id` |
-| `duration_ms` | **GENERATED STORED** — `(finished_at - started_at)` in ms |
-| `next_retry_at` | When the next attempt is eligible |
-| `exit_signal` | e.g. `SIGKILL` if worker was force-killed |
+| Column           | Notes                                                     |
+| ---------------- | --------------------------------------------------------- |
+| `attempt_number` | 1-based. UNIQUE with `job_id`                             |
+| `duration_ms`    | **GENERATED STORED** — `(finished_at - started_at)` in ms |
+| `next_retry_at`  | When the next attempt is eligible                         |
+| `exit_signal`    | e.g. `SIGKILL` if worker was force-killed                 |
 
 ---
 
 ### `job_logs`
+
 Append-only execution log. Uses `BIGSERIAL` PK (not UUID) to avoid random index page splits at high insert rates.
 
-| Column | Notes |
-|---|---|
+| Column         | Notes                                               |
+| -------------- | --------------------------------------------------- |
 | `execution_id` | `NULL` = job-level log. Non-null = specific attempt |
-| `metadata` | Structured context: `{"step":"fetch","ms":42}` |
+| `metadata`     | Structured context: `{"step":"fetch","ms":42}`      |
 
 ---
 
 ### `scheduled_jobs`
+
 Cron/recurring job templates polled by the Scheduler service.
 
-| Column | Notes |
-|---|---|
-| `cron_expression` | Standard 5-field cron. Validated by application |
-| `timezone` | IANA timezone. Default `UTC` |
+| Column            | Notes                                                           |
+| ----------------- | --------------------------------------------------------------- |
+| `cron_expression` | Standard 5-field cron. Validated by application                 |
+| `timezone`        | IANA timezone. Default `UTC`                                    |
 | `skip_if_running` | `TRUE` = skip if `last_job_id` still running (prevents overlap) |
-| `next_run_at` | Updated atomically by Scheduler after each fire |
+| `next_run_at`     | Updated atomically by Scheduler after each fire                 |
 
 ---
 
 ### `dead_letter_jobs`
+
 Snapshot of jobs that exhausted all retries.
 
-| Column | Notes |
-|---|---|
-| `job_id` | UNIQUE — one DLQ row per dead job |
-| `payload` | Denormalized snapshot — DLQ APIs don't need a JOIN |
-| `requeued_job_id` | Points to the new job created by manual re-queue |
+| Column            | Notes                                              |
+| ----------------- | -------------------------------------------------- |
+| `job_id`          | UNIQUE — one DLQ row per dead job                  |
+| `payload`         | Denormalized snapshot — DLQ APIs don't need a JOIN |
+| `requeued_job_id` | Points to the new job created by manual re-queue   |
 
 ---
 
 ## Index Reference
 
-| # | Index Name | Table | Columns | Partial? | Supports |
-|---|---|---|---|---|---|
-| 1 | `idx_jobs_claim` | `jobs` | `(queue_id, priority DESC, enqueued_at ASC)` | `WHERE status='pending'` | Job claim query |
-| 2 | `idx_jobs_scheduled_promotion` | `jobs` | `(scheduled_at ASC)` | `WHERE status='scheduled'` | Scheduled job promotion |
-| 3 | `idx_jobs_retry_eligible` | `jobs` | `(next_attempt_at ASC)` | `WHERE status='failed'` | Retry re-queuing |
-| 4 | `idx_jobs_running_per_queue` | `jobs` | `(queue_id)` | `WHERE status='running'` | Concurrency gate |
-| 5 | `idx_jobs_running_by_worker` | `jobs` | `(worker_id)` | `WHERE status='running'` | Stale job reaper |
-| 6 | `idx_jobs_queue_status_updated` | `jobs` | `(queue_id, status, updated_at DESC)` | — | API job listing |
-| 7 | `idx_jobs_batch_group` | `jobs` | `(batch_group_id)` | `WHERE batch_group_id IS NOT NULL` | Batch progress |
-| 8 | `idx_jobs_scheduled_job_id` | `jobs` | `(scheduled_job_id, created_at DESC)` | `WHERE NOT NULL` | Cron run history |
-| 9 | `UNIQUE(job_id, attempt_number)` | `job_executions` | `(job_id, attempt_number)` | — | Retry history lookup |
-| 10 | `idx_job_executions_worker` | `job_executions` | `(worker_id, started_at DESC)` | `WHERE NOT NULL` | Worker's job history |
-| 11 | `idx_job_logs_job_time` | `job_logs` | `(job_id, logged_at ASC)` | — | Stream job logs |
-| 12 | `idx_job_logs_job_level` | `job_logs` | `(job_id, level, logged_at ASC)` | — | Filter logs by level |
-| 13 | `idx_workers_active_heartbeat` | `workers` | `(last_heartbeat_at ASC)` | `WHERE status='active'` | Dead worker detection |
-| 14 | `idx_workers_project` | `workers` | `(project_id, registered_at DESC)` | — | List workers |
-| 15 | `idx_worker_heartbeats_worker_time` | `worker_heartbeats` | `(worker_id, created_at DESC)` | — | Recent heartbeats |
-| 16 | `idx_scheduled_jobs_due` | `scheduled_jobs` | `(next_run_at ASC)` | `WHERE enabled=TRUE` | Cron dispatcher |
-| 17 | `idx_dlq_queue_time` | `dead_letter_jobs` | `(queue_id, moved_to_dlq_at DESC)` | `WHERE requeued_at IS NULL` | DLQ listing |
-| 18 | `UNIQUE(queue_id, date)` | `queue_metrics` | `(queue_id, date)` | — | Metrics time series |
-| 19 | `UNIQUE(key_hash)` | `api_keys` | `(key_hash)` | — | API key auth lookup |
-| 20 | `idx_org_members_user` | `organization_members` | `(user_id)` | — | User's org list |
+| #   | Index Name                          | Table                  | Columns                                      | Partial?                           | Supports                |
+| --- | ----------------------------------- | ---------------------- | -------------------------------------------- | ---------------------------------- | ----------------------- |
+| 1   | `idx_jobs_claim`                    | `jobs`                 | `(queue_id, priority DESC, enqueued_at ASC)` | `WHERE status='pending'`           | Job claim query         |
+| 2   | `idx_jobs_scheduled_promotion`      | `jobs`                 | `(scheduled_at ASC)`                         | `WHERE status='scheduled'`         | Scheduled job promotion |
+| 3   | `idx_jobs_retry_eligible`           | `jobs`                 | `(next_attempt_at ASC)`                      | `WHERE status='failed'`            | Retry re-queuing        |
+| 4   | `idx_jobs_running_per_queue`        | `jobs`                 | `(queue_id)`                                 | `WHERE status='running'`           | Concurrency gate        |
+| 5   | `idx_jobs_running_by_worker`        | `jobs`                 | `(worker_id)`                                | `WHERE status='running'`           | Stale job reaper        |
+| 6   | `idx_jobs_queue_status_updated`     | `jobs`                 | `(queue_id, status, updated_at DESC)`        | —                                  | API job listing         |
+| 7   | `idx_jobs_batch_group`              | `jobs`                 | `(batch_group_id)`                           | `WHERE batch_group_id IS NOT NULL` | Batch progress          |
+| 8   | `idx_jobs_scheduled_job_id`         | `jobs`                 | `(scheduled_job_id, created_at DESC)`        | `WHERE NOT NULL`                   | Cron run history        |
+| 9   | `UNIQUE(job_id, attempt_number)`    | `job_executions`       | `(job_id, attempt_number)`                   | —                                  | Retry history lookup    |
+| 10  | `idx_job_executions_worker`         | `job_executions`       | `(worker_id, started_at DESC)`               | `WHERE NOT NULL`                   | Worker's job history    |
+| 11  | `idx_job_logs_job_time`             | `job_logs`             | `(job_id, logged_at ASC)`                    | —                                  | Stream job logs         |
+| 12  | `idx_job_logs_job_level`            | `job_logs`             | `(job_id, level, logged_at ASC)`             | —                                  | Filter logs by level    |
+| 13  | `idx_workers_active_heartbeat`      | `workers`              | `(last_heartbeat_at ASC)`                    | `WHERE status='active'`            | Dead worker detection   |
+| 14  | `idx_workers_project`               | `workers`              | `(project_id, registered_at DESC)`           | —                                  | List workers            |
+| 15  | `idx_worker_heartbeats_worker_time` | `worker_heartbeats`    | `(worker_id, created_at DESC)`               | —                                  | Recent heartbeats       |
+| 16  | `idx_scheduled_jobs_due`            | `scheduled_jobs`       | `(next_run_at ASC)`                          | `WHERE enabled=TRUE`               | Cron dispatcher         |
+| 17  | `idx_dlq_queue_time`                | `dead_letter_jobs`     | `(queue_id, moved_to_dlq_at DESC)`           | `WHERE requeued_at IS NULL`        | DLQ listing             |
+| 18  | `UNIQUE(queue_id, date)`            | `queue_metrics`        | `(queue_id, date)`                           | —                                  | Metrics time series     |
+| 19  | `UNIQUE(key_hash)`                  | `api_keys`             | `(key_hash)`                                 | —                                  | API key auth lookup     |
+| 20  | `idx_org_members_user`              | `organization_members` | `(user_id)`                                  | —                                  | User's org list         |
 
 ---
 
@@ -703,27 +714,28 @@ COMMIT;
 
 ## Cascade Rules
 
-| Relationship | ON DELETE | Reason |
-|---|---|---|
-| `org_members → users` | CASCADE | Remove org memberships when user deleted |
-| `org_members → organizations` | CASCADE | Remove memberships when org deleted |
-| `projects → organizations` | CASCADE | Deleting org destroys all projects |
-| `queues → projects` | CASCADE | Deleting project destroys all queues |
-| `jobs → queues` | CASCADE | Deleting queue destroys all its jobs |
-| `job_executions → jobs` | CASCADE | Attempts are meaningless without the job |
-| `job_logs → jobs` | CASCADE | Logs are meaningless without the job |
-| `dead_letter_jobs → jobs` | CASCADE | DLQ entry tracks the dead job |
-| `worker_heartbeats → workers` | CASCADE | Heartbeat log scoped to worker |
-| `jobs.worker_id → workers` | **SET NULL** | Worker death must NOT delete jobs — they become re-claimable |
-| `job_executions.worker_id → workers` | **SET NULL** | Historical record kept, worker ref cleared |
-| `queues.retry_policy_id → retry_policies` | **SET NULL** | Queue falls back to defaults if policy deleted |
-| `scheduled_jobs.last_job_id → jobs` | **SET NULL** | History pointer, not a dependency |
+| Relationship                              | ON DELETE    | Reason                                                       |
+| ----------------------------------------- | ------------ | ------------------------------------------------------------ |
+| `org_members → users`                     | CASCADE      | Remove org memberships when user deleted                     |
+| `org_members → organizations`             | CASCADE      | Remove memberships when org deleted                          |
+| `projects → organizations`                | CASCADE      | Deleting org destroys all projects                           |
+| `queues → projects`                       | CASCADE      | Deleting project destroys all queues                         |
+| `jobs → queues`                           | CASCADE      | Deleting queue destroys all its jobs                         |
+| `job_executions → jobs`                   | CASCADE      | Attempts are meaningless without the job                     |
+| `job_logs → jobs`                         | CASCADE      | Logs are meaningless without the job                         |
+| `dead_letter_jobs → jobs`                 | CASCADE      | DLQ entry tracks the dead job                                |
+| `worker_heartbeats → workers`             | CASCADE      | Heartbeat log scoped to worker                               |
+| `jobs.worker_id → workers`                | **SET NULL** | Worker death must NOT delete jobs — they become re-claimable |
+| `job_executions.worker_id → workers`      | **SET NULL** | Historical record kept, worker ref cleared                   |
+| `queues.retry_policy_id → retry_policies` | **SET NULL** | Queue falls back to defaults if policy deleted               |
+| `scheduled_jobs.last_job_id → jobs`       | **SET NULL** | History pointer, not a dependency                            |
 
 ---
 
 ## Trigger Reference
 
 ### `fn_set_updated_at`
+
 Applied to 11 tables via a `DO` loop. Fires `BEFORE UPDATE`, sets `NEW.updated_at = NOW()`.
 
 ```sql
@@ -733,6 +745,7 @@ Applied to 11 tables via a `DO` loop. Fires `BEFORE UPDATE`, sets `NEW.updated_a
 ```
 
 ### `fn_update_batch_counts`
+
 Fires `AFTER INSERT OR UPDATE OF status ON jobs` when `batch_group_id IS NOT NULL`.
 
 - **INSERT** → increments `total_count` and `pending_count`
@@ -745,14 +758,17 @@ This keeps `batch_groups` counters accurate without application-layer bookkeepin
 ## Views
 
 ### `v_pending_jobs`
+
 Shows all claimable jobs (status=pending, queue active, past scheduled time).
 Used by workers as the basis for their claim query.
 
 ### `v_queue_stats`
+
 Live per-queue job counts (running, pending, failed, dead, scheduled).
 Used by the dashboard for real-time concurrency display.
 
 ### `v_dead_workers`
+
 Active workers that have not heartbeated in >60 seconds.
 Used by the stale-job reaper in the Scheduler service.
 

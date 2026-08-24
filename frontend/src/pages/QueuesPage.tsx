@@ -24,10 +24,7 @@ export const QueuesPage: React.FC = () => {
   const fetchQueues = async () => {
     try {
       const url = projectId ? `/queues?projectId=${projectId}` : '/queues';
-      const [qRes, pRes] = await Promise.all([
-        apiClient.get(url),
-        apiClient.get('/projects'),
-      ]);
+      const [qRes, pRes] = await Promise.all([apiClient.get(url), apiClient.get('/projects')]);
 
       if (qRes.data?.data) {
         setQueues(qRes.data.data);
@@ -161,7 +158,9 @@ export const QueuesPage: React.FC = () => {
                   </div>
                   <div className="p-2 rounded-lg bg-gray-950 border border-gray-800/80">
                     <span className="text-gray-500 block">DLQ Enabled</span>
-                    <span className="font-semibold text-emerald-400">{q.dlqEnabled ? 'Yes' : 'No'}</span>
+                    <span className="font-semibold text-emerald-400">
+                      {q.dlqEnabled ? 'Yes' : 'No'}
+                    </span>
                   </div>
                 </div>
               </div>

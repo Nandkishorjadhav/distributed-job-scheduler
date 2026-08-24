@@ -120,9 +120,7 @@ describe('Security, Multi-Tenant Isolation & Authentication Tests', () => {
 
   describe('1. API Key Authentication & Verification', () => {
     it('authenticates successfully with a valid SHA-256 registered API key', async () => {
-      const res = await request(app)
-        .get('/api/v1/projects')
-        .set('x-api-key', rawValidApiKey);
+      const res = await request(app).get('/api/v1/projects').set('x-api-key', rawValidApiKey);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -138,18 +136,14 @@ describe('Security, Multi-Tenant Isolation & Authentication Tests', () => {
     });
 
     it('rejects a revoked API key with 401 API_KEY_REVOKED', async () => {
-      const res = await request(app)
-        .get('/api/v1/projects')
-        .set('x-api-key', rawRevokedApiKey);
+      const res = await request(app).get('/api/v1/projects').set('x-api-key', rawRevokedApiKey);
 
       expect(res.status).toBe(401);
       expect(res.body.code).toBe('API_KEY_REVOKED');
     });
 
     it('rejects an expired API key with 401 API_KEY_EXPIRED', async () => {
-      const res = await request(app)
-        .get('/api/v1/projects')
-        .set('x-api-key', rawExpiredApiKey);
+      const res = await request(app).get('/api/v1/projects').set('x-api-key', rawExpiredApiKey);
 
       expect(res.status).toBe(401);
       expect(res.body.code).toBe('API_KEY_EXPIRED');
@@ -189,9 +183,7 @@ describe('Security, Multi-Tenant Isolation & Authentication Tests', () => {
       expect(loginRes.status).toBe(403);
       expect(loginRes.body.code).toBe('ACCOUNT_INACTIVE');
 
-      const apiKeyRes = await request(app)
-        .get('/api/v1/projects')
-        .set('x-api-key', rawValidApiKey);
+      const apiKeyRes = await request(app).get('/api/v1/projects').set('x-api-key', rawValidApiKey);
 
       expect(apiKeyRes.status).toBe(401);
       expect(apiKeyRes.body.code).toBe('ACCOUNT_INACTIVE');

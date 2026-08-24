@@ -9,12 +9,15 @@ The **Dead Letter Queue (DLQ)** subsystem captures and isolates jobs that cannot
 ## 1. When a Job Enters DLQ
 
 A job enters the Dead Letter Queue when:
+
 1. **Max Retry Attempts are Exhausted**: `job.attempt_count >= job.max_attempts`.
 2. **Permanent Failure is Detected**: Handlers throw fatal errors, or queue execution terminates.
 3. **Queue has `dlq_enabled = true`**: Default behavior for all queues.
 
 ### Stored DLQ Metadata
+
 Each DLQ record captures:
+
 - **`job_id`**: Original job UUID.
 - **`queue_id`** & **`queue_name`**: The queue where failure occurred.
 - **`project_id`** & **`project_name`**: Tenant and resource scoping.
@@ -32,6 +35,7 @@ Each DLQ record captures:
 ## 2. REST APIs Implemented
 
 ### 1. List DLQ Jobs
+
 - **`GET /api/v1/dlq`** (or **`GET /api/v1/queues/:queueId/dlq`**)
 - **Query Parameters**:
   - `page`: Page number (default: `1`).
@@ -42,6 +46,7 @@ Each DLQ record captures:
   - `search`: Fuzzy search on job name, error message, or error code.
 
 ### 2. Dashboard-Ready DLQ Statistics
+
 - **`GET /api/v1/dlq/stats`** (or **`GET /api/v1/queues/:queueId/dlq/stats`**)
 - **Response Structure**:
   ```json
@@ -66,10 +71,12 @@ Each DLQ record captures:
   ```
 
 ### 3. Inspect DLQ Job
+
 - **`GET /api/v1/dlq/:dlqId`**
 - Returns the complete DLQ snapshot alongside the **full execution attempt history** (`job_executions`) and **execution log stream** (`job_logs`).
 
 ### 4. Re-queue / Retry DLQ Job
+
 - **`POST /api/v1/dlq/:dlqId/retry`**
 - Atomically:
   1. Resets original job status to `pending`, clears error messages, resets attempt count to `0`, and unassigns worker.
@@ -77,10 +84,12 @@ Each DLQ record captures:
   3. Appends an audit log into `job_logs`.
 
 ### 5. Archive DLQ Job
+
 - **`POST /api/v1/dlq/:dlqId/archive`**
 - Marks DLQ record as `archived` with `archived_at = NOW()` and `archived_by = req.user.id`.
 
 ### 6. Delete DLQ Job
+
 - **`DELETE /api/v1/dlq/:dlqId`**
 - Permanently deletes the DLQ record.
 

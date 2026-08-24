@@ -11,11 +11,11 @@ The **Scheduler Service** ([`Scheduler.ts`](file:///d:/Job%20Scheduler/backend/s
 
 ## 1. Supported Time-Based Job Types
 
-| Type | Source Table | Transition / Action | Trigger Condition |
-| :--- | :--- | :--- | :--- |
-| **Delayed Jobs** | `jobs` | `SCHEDULED` $\rightarrow$ `PENDING` | `scheduled_at <= NOW()` |
-| **One-off Scheduled Jobs** | `jobs` | `SCHEDULED` $\rightarrow$ `PENDING` | `scheduled_at <= NOW()` |
-| **Recurring Cron Jobs** | `scheduled_jobs` | Spawns child job in `PENDING` state | `next_run_at <= NOW()` or `NULL` |
+| Type                       | Source Table     | Transition / Action                 | Trigger Condition                |
+| :------------------------- | :--------------- | :---------------------------------- | :------------------------------- |
+| **Delayed Jobs**           | `jobs`           | `SCHEDULED` $\rightarrow$ `PENDING` | `scheduled_at <= NOW()`          |
+| **One-off Scheduled Jobs** | `jobs`           | `SCHEDULED` $\rightarrow$ `PENDING` | `scheduled_at <= NOW()`          |
+| **Recurring Cron Jobs**    | `scheduled_jobs` | Spawns child job in `PENDING` state | `next_run_at <= NOW()` or `NULL` |
 
 ---
 

@@ -200,7 +200,7 @@ describe('Flagship Concurrency & Reliability Stress Test: 100 Jobs Fleet', () =>
 
     // ─── VERIFICATION 1: All eligible jobs are processed ─────────────────────
     expect(completedCount).toBe(80); // 60 success + 20 retried
-    expect(deadCount).toBe(20);      // 20 permanently failed / dead (quarantined in DLQ)
+    expect(deadCount).toBe(20); // 20 permanently failed / dead (quarantined in DLQ)
     expect(completedCount + deadCount).toBe(100);
 
     // ─── VERIFICATION 2: Queue Concurrency Limit was strictly respected ─────
@@ -218,10 +218,9 @@ describe('Flagship Concurrency & Reliability Stress Test: 100 Jobs Fleet', () =>
     expect(executionRes.rows.length).toBe(0); // No attempt was ever executed more than once
 
     // ─── VERIFICATION 4: Permanently failed jobs reach DLQ ───────────────────
-    const dlqRes = await pool.query(
-      `SELECT COUNT(*) FROM dead_letter_jobs WHERE queue_id = $1`,
-      [queueId]
-    );
+    const dlqRes = await pool.query(`SELECT COUNT(*) FROM dead_letter_jobs WHERE queue_id = $1`, [
+      queueId,
+    ]);
     expect(parseInt(dlqRes.rows[0].count, 10)).toBe(20);
 
     // Verify DLQ contents match the fail jobs

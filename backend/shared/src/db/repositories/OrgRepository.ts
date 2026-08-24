@@ -27,7 +27,10 @@ export class OrgRepository {
         VALUES ($1, $2)
         RETURNING id, name, slug, is_active, created_at, updated_at
       `;
-      const orgResult = await client.query(orgQuery, [data.name.trim(), data.slug.toLowerCase().trim()]);
+      const orgResult = await client.query(orgQuery, [
+        data.name.trim(),
+        data.slug.toLowerCase().trim(),
+      ]);
       const org = orgResult.rows[0];
 
       const memberQuery = `
@@ -159,7 +162,11 @@ export class OrgRepository {
   /**
    * List organizations a user belongs to with pagination.
    */
-  async listUserOrgs(userId: string, page: number, pageSize: number): Promise<{ data: OrgResponse[]; total: number }> {
+  async listUserOrgs(
+    userId: string,
+    page: number,
+    pageSize: number
+  ): Promise<{ data: OrgResponse[]; total: number }> {
     const offset = (page - 1) * pageSize;
 
     const countQuery = `

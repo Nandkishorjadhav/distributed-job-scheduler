@@ -128,6 +128,7 @@ RETURNING jobs.*;
 ```
 
 ### Why this prevents duplicate claims:
+
 1. **`FOR UPDATE` Exclusive Row Lock**: PostgreSQL locks selected row(s). No other transaction can read with `FOR UPDATE` or modify the row until `COMMIT`.
 2. **`SKIP LOCKED` Zero Contention**: Other workers concurrently running the same query skip all locked rows instantly without blocking.
 3. **Atomic Selection & Update**: Row selection, worker assignment, and transition to `status = 'running'` occur in a single atomic database statement.
@@ -137,11 +138,11 @@ RETURNING jobs.*;
 
 ## Worker Lifecycle States
 
-| State | Enum Value | Description |
-| :--- | :--- | :--- |
-| **`ACTIVE`** | `active` | Worker is actively sending heartbeats, polling queues, and executing jobs. |
+| State          | Enum Value | Description                                                                                |
+| :------------- | :--------- | :----------------------------------------------------------------------------------------- |
+| **`ACTIVE`**   | `active`   | Worker is actively sending heartbeats, polling queues, and executing jobs.                 |
 | **`DRAINING`** | `draining` | Polling has ceased. Worker is waiting for in-flight jobs to complete before shutting down. |
-| **`OFFLINE`** | `offline` | Worker has cleanly stopped all execution, deregistered in DB, and stopped heartbeats. |
+| **`OFFLINE`**  | `offline`  | Worker has cleanly stopped all execution, deregistered in DB, and stopped heartbeats.      |
 
 ---
 
@@ -163,7 +164,7 @@ const worker = new Worker(getPool(), {
 // Register a custom email handler
 worker.registerHandler('send-email', async (ctx) => {
   await ctx.log('info', `Sending email to ${ctx.payload.to}`);
-  
+
   // Perform actual work (e.g. SMTP call, API call)
   const result = await emailProvider.send({
     to: ctx.payload.to as string,
@@ -177,6 +178,7 @@ await worker.start();
 ```
 
 ### Execution Context API (`JobExecutionContext`)
+
 - **`ctx.jobId`**: Unique UUID of the job.
 - **`ctx.name`**: Name of the job.
 - **`ctx.payload`**: JSON payload object submitted by client.
@@ -189,6 +191,7 @@ await worker.start();
 ## Heartbeat & Liveness Monitoring
 
 While running, the worker executes periodic heartbeats:
+
 - Heartbeat interval configured by `WORKER_HEARTBEAT_INTERVAL_MS` (default: `10000ms`).
 - Updates `workers.last_heartbeat_at = NOW()` and `workers.current_job_count = activeJobs.size`.
 - If a worker dies ungracefully (e.g. OOM or host crash), the scheduler detects missing heartbeats and resets its orphaned running jobs back to `pending`.
@@ -198,6 +201,7 @@ While running, the worker executes periodic heartbeats:
 ## Error Handling & Retry Backoff
 
 When a job handler throws an error:
+
 1. The error message and error code are captured.
 2. The worker increments `attempt_count` and checks against `max_attempts`.
 3. **If retry attempts remain (`attempt_count < max_attempts`)**:
@@ -226,37 +230,41 @@ When receiving `SIGTERM` or `SIGINT` (or calling `worker.stop(drainTimeoutMs)`):
 
 ## Configuration & Environment Variables
 
-| Variable | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `WORKER_CONCURRENCY` | `number` | `5` | Maximum number of concurrent jobs processed simultaneously. |
-| `WORKER_POLL_INTERVAL_MS` | `number` | `1000` | Polling delay in milliseconds when queues are idle. |
-| `WORKER_HEARTBEAT_INTERVAL_MS`| `number` | `10000` | Interval between worker liveness heartbeats in ms. |
-| `WORKER_DRAIN_TIMEOUT_MS` | `number` | `30000` | Maximum time to wait for active jobs to finish on shutdown. |
-| `WORKER_PROJECT_ID` | `string` | *(Auto-detected)* | Project UUID to which this worker instance belongs. |
-| `WORKER_QUEUE_ID` | `string` | *(All queues)* | Optional queue UUID to restrict claiming to a specific queue. |
-| `DATABASE_URL` | `string` | `postgres://...` | PostgreSQL connection string. |
-| `REDIS_URL` | `string` | `redis://...` | Redis connection string. |
+| Variable                       | Type     | Default           | Description                                                   |
+| :----------------------------- | :------- | :---------------- | :------------------------------------------------------------ |
+| `WORKER_CONCURRENCY`           | `number` | `5`               | Maximum number of concurrent jobs processed simultaneously.   |
+| `WORKER_POLL_INTERVAL_MS`      | `number` | `1000`            | Polling delay in milliseconds when queues are idle.           |
+| `WORKER_HEARTBEAT_INTERVAL_MS` | `number` | `10000`           | Interval between worker liveness heartbeats in ms.            |
+| `WORKER_DRAIN_TIMEOUT_MS`      | `number` | `30000`           | Maximum time to wait for active jobs to finish on shutdown.   |
+| `WORKER_PROJECT_ID`            | `string` | _(Auto-detected)_ | Project UUID to which this worker instance belongs.           |
+| `WORKER_QUEUE_ID`              | `string` | _(All queues)_    | Optional queue UUID to restrict claiming to a specific queue. |
+| `DATABASE_URL`                 | `string` | `postgres://...`  | PostgreSQL connection string.                                 |
+| `REDIS_URL`                    | `string` | `redis://...`     | Redis connection string.                                      |
 
 ---
 
 ## Running & Testing
 
 ### Build the Worker Package
+
 ```powershell
 npm run build --prefix backend/worker
 ```
 
 ### Start the Worker in Development Mode
+
 ```powershell
 npm run dev --prefix backend/worker
 ```
 
 ### Start the Worker in Production Mode
+
 ```powershell
 npm start --prefix backend/worker
 ```
 
 ### Run Concurrency & Lifecycle Test Suites
+
 ```powershell
 cd tests
 npx vitest run worker/worker_lifecycle.test.ts concurrency/job_claiming.test.ts

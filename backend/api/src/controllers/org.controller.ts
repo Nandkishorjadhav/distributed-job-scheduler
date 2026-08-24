@@ -33,7 +33,13 @@ export async function createOrg(
     });
   } catch (err: any) {
     if (err?.code === '23503') {
-      return next(new AppError(401, 'Session user does not exist in database. Please log in again.', 'SESSION_INVALID'));
+      return next(
+        new AppError(
+          401,
+          'Session user does not exist in database. Please log in again.',
+          'SESSION_INVALID'
+        )
+      );
     }
     next(err);
   }
@@ -49,7 +55,8 @@ export async function listOrgs(
       throw new AppError(401, 'Authentication required', 'UNAUTHORIZED');
     }
 
-    const { page, pageSize } = (req as AuthenticatedRequest & { parsedQuery: PaginationInput }).parsedQuery || {
+    const { page, pageSize } = (req as AuthenticatedRequest & { parsedQuery: PaginationInput })
+      .parsedQuery || {
       page: 1,
       pageSize: 20,
     };

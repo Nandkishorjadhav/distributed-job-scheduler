@@ -155,7 +155,9 @@ export class DeadLetterJobRepository {
 
     if (filters.search) {
       params.push(`%${filters.search}%`);
-      conditions.push(`(d.name ILIKE $${paramIndex} OR d.final_error_message ILIKE $${paramIndex} OR d.final_error_code ILIKE $${paramIndex})`);
+      conditions.push(
+        `(d.name ILIKE $${paramIndex} OR d.final_error_message ILIKE $${paramIndex} OR d.final_error_code ILIKE $${paramIndex})`
+      );
       paramIndex++;
     }
 
@@ -251,15 +253,17 @@ export class DeadLetterJobRepository {
   /**
    * Re-queue a DLQ job back into active queue for execution.
    */
-  async requeue(dlqId: string, requeuedByUserId: string): Promise<{ dlq: DLQJobResponse; jobId: string }> {
+  async requeue(
+    dlqId: string,
+    requeuedByUserId: string
+  ): Promise<{ dlq: DLQJobResponse; jobId: string }> {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
 
-      const dlqRes = await client.query(
-        `SELECT * FROM dead_letter_jobs WHERE id = $1 FOR UPDATE`,
-        [dlqId]
-      );
+      const dlqRes = await client.query(`SELECT * FROM dead_letter_jobs WHERE id = $1 FOR UPDATE`, [
+        dlqId,
+      ]);
       if (dlqRes.rows.length === 0) {
         throw new Error(`DLQ record not found: ${dlqId}`);
       }
@@ -308,7 +312,14 @@ export class DeadLetterJobRepository {
         INSERT INTO job_logs (job_id, level, message, metadata)
         VALUES ($1, 'info', 'Job re-queued from Dead Letter Queue', $2)
         `,
-        [jobId, JSON.stringify({ dlqId, requeuedBy: requeuedByUserId, timestamp: new Date().toISOString() })]
+        [
+          jobId,
+          JSON.stringify({
+            dlqId,
+            requeuedBy: requeuedByUserId,
+            timestamp: new Date().toISOString(),
+          }),
+        ]
       );
 
       await client.query('COMMIT');
@@ -356,7 +367,9 @@ export class DeadLetterJobRepository {
   /**
    * Get dashboard-ready DLQ statistics.
    */
-  async getStats(options: { projectId?: string; queueId?: string; userId?: string } = {}): Promise<DLQStatsResponse> {
+  async getStats(
+    options: { projectId?: string; queueId?: string; userId?: string } = {}
+  ): Promise<DLQStatsResponse> {
     const conditions: string[] = [];
     const params: unknown[] = [];
     let paramIndex = 1;
@@ -468,7 +481,11 @@ export class DeadLetterJobRepository {
       projectId: (row.project_id as string) ?? undefined,
       projectName: (row.project_name as string) ?? undefined,
       name: row.name as string,
-      payload: row.payload ? (typeof row.payload === 'string' ? JSON.parse(row.payload) : (row.payload as Record<string, unknown>)) : {},
+      payload: row.payload
+        ? typeof row.payload === 'string'
+          ? JSON.parse(row.payload)
+          : (row.payload as Record<string, unknown>)
+        : {},
       totalAttempts: parseInt(row.total_attempts as string, 10),
       finalErrorMessage: (row.final_error_message as string) ?? null,
       finalErrorCode: (row.final_error_code as string) ?? null,

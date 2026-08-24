@@ -157,7 +157,9 @@ describe('Queue Management API Tests', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.every((q: { projectId: string }) => q.projectId === projectId)).toBe(true);
+      expect(
+        response.body.data.every((q: { projectId: string }) => q.projectId === projectId)
+      ).toBe(true);
     });
   });
 
