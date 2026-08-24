@@ -13,7 +13,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    setupFiles: ['./setup.ts'],
+    setupFiles: [path.resolve(__dirname, './setup.ts')],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

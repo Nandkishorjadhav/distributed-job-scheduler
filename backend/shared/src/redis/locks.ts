@@ -34,6 +34,10 @@ export async function tryAcquireLock(
   ttlMs: number
 ): Promise<Awaited<ReturnType<Redlock['acquire']>> | null> {
   try {
+    const client = getRedisClient();
+    if (client.status === 'wait') {
+      await client.connect();
+    }
     const lock = await getRedlock().acquire([key], ttlMs);
     return lock;
   } catch {

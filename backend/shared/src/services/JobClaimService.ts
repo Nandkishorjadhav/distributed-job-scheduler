@@ -25,6 +25,37 @@ export class JobClaimService {
     try {
       await client.query('BEGIN');
 
+      let effectiveLimit = limit;
+      if (queueId) {
+        // 1. Acquire exclusive queue row lock (serializes concurrent worker claims)
+        const lockRes = await client.query(
+          `SELECT id, concurrency_limit FROM queues WHERE id = $1 AND status = 'active' FOR UPDATE`,
+          [queueId]
+        );
+
+        if (lockRes.rows.length === 0) {
+          await client.query('COMMIT');
+          return [];
+        }
+
+        const concurrencyLimit = parseInt(lockRes.rows[0].concurrency_limit, 10);
+
+        // 2. Count active running jobs with a fresh statement snapshot strictly after lock acquisition
+        const countRes = await client.query(
+          `SELECT COUNT(*) FROM jobs WHERE queue_id = $1 AND status = 'running'`,
+          [queueId]
+        );
+        const runningCount = parseInt(countRes.rows[0].count, 10);
+        const availableSlots = Math.max(0, concurrencyLimit - runningCount);
+
+        if (availableSlots <= 0) {
+          await client.query('COMMIT');
+          return [];
+        }
+
+        effectiveLimit = Math.min(limit, availableSlots);
+      }
+
       const claimQuery = `
         WITH worker_info AS (
           SELECT id, project_id, max_concurrency, current_job_count,
@@ -73,7 +104,7 @@ export class JobClaimService {
 
       const result = await client.query(claimQuery, [
         queueId ?? null,
-        limit,
+        effectiveLimit,
         workerId,
       ]);
 
@@ -254,6 +285,12 @@ export class JobClaimService {
       }
 
       const jobRow = selectRes.rows[0];
+      if (jobRow.worker_id !== workerId || jobRow.status !== JobStatus.RUNNING) {
+        logger.warn(`Ignoring stale failJob call for job ${jobId} from worker ${workerId}`);
+        await client.query('ROLLBACK');
+        return this.mapToJobResponse(jobRow);
+      }
+
       const attemptCount = parseInt(jobRow.attempt_count, 10);
       const maxAttempts = parseInt(jobRow.max_attempts, 10);
       const isRetryAllowed = RetryPolicyCalculator.isRetryAllowed(maxAttempts, attemptCount);

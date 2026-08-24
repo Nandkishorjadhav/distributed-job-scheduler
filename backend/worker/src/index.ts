@@ -9,11 +9,54 @@ export { Worker, WorkerOptions, JobHandlerRegistry, JobHandler, JobExecutionCont
 const CONCURRENCY = Number(process.env.WORKER_CONCURRENCY ?? 5);
 const HEARTBEAT_INTERVAL_MS = Number(process.env.WORKER_HEARTBEAT_INTERVAL_MS ?? 10000);
 const POLL_INTERVAL_MS = Number(process.env.WORKER_POLL_INTERVAL_MS ?? 1000);
-const DRAIN_TIMEOUT_MS = Number(process.env.WORKER_DRAIN_TIMEOUT_MS ?? 30000);
+const DRAIN_TIMEOUT_MS = Number(process.env.WORKER_DRAIN_TIMEOUT_MS ?? process.env.WORKER_SHUTDOWN_TIMEOUT_MS ?? 30000);
 const PROJECT_ID = process.env.WORKER_PROJECT_ID;
 const QUEUE_ID = process.env.WORKER_QUEUE_ID;
 
-let activeWorker: Worker | null = null;
+const activeWorkers = new Map<string, Worker>();
+let syncInterval: NodeJS.Timeout | null = null;
+
+async function syncWorkers(pool: any): Promise<void> {
+  try {
+    if (PROJECT_ID) {
+      if (!activeWorkers.has(PROJECT_ID)) {
+        const worker = new Worker(pool, {
+          projectId: PROJECT_ID,
+          queueId: QUEUE_ID,
+          concurrency: CONCURRENCY,
+          pollIntervalMs: POLL_INTERVAL_MS,
+          heartbeatIntervalMs: HEARTBEAT_INTERVAL_MS,
+          drainTimeoutMs: DRAIN_TIMEOUT_MS,
+          hostname: os.hostname(),
+          pid: process.pid,
+        });
+        activeWorkers.set(PROJECT_ID, worker);
+        await worker.start();
+      }
+      return;
+    }
+
+    const projRes = await pool.query('SELECT id, name FROM projects');
+    for (const row of projRes.rows) {
+      if (!activeWorkers.has(row.id)) {
+        logger.info(`Auto-discovered project '${row.name}' (${row.id}) — starting worker`);
+        const worker = new Worker(pool, {
+          projectId: row.id,
+          concurrency: CONCURRENCY,
+          pollIntervalMs: POLL_INTERVAL_MS,
+          heartbeatIntervalMs: HEARTBEAT_INTERVAL_MS,
+          drainTimeoutMs: DRAIN_TIMEOUT_MS,
+          hostname: os.hostname(),
+          pid: process.pid,
+        });
+        activeWorkers.set(row.id, worker);
+        await worker.start();
+      }
+    }
+  } catch (err: unknown) {
+    logger.warn('Failed to sync worker projects', { error: (err as Error).message });
+  }
+}
 
 async function bootstrap(): Promise<void> {
   logger.info('Starting Worker Service...');
@@ -22,39 +65,22 @@ async function bootstrap(): Promise<void> {
   await pool.query('SELECT 1');
   logger.info('Database connectivity verified');
 
-  let targetProjectId = PROJECT_ID;
-  if (!targetProjectId) {
-    // If PROJECT_ID not provided, pick first project in database for default worker instance
-    const projRes = await pool.query('SELECT id FROM projects LIMIT 1');
-    if (projRes.rows.length > 0) {
-      targetProjectId = projRes.rows[0].id;
-    } else {
-      logger.warn('No projects found in database. Worker will wait for project creation.');
-    }
-  }
+  await syncWorkers(pool);
 
-  if (targetProjectId) {
-    activeWorker = new Worker(pool, {
-      projectId: targetProjectId,
-      queueId: QUEUE_ID,
-      concurrency: CONCURRENCY,
-      pollIntervalMs: POLL_INTERVAL_MS,
-      heartbeatIntervalMs: HEARTBEAT_INTERVAL_MS,
-      drainTimeoutMs: DRAIN_TIMEOUT_MS,
-      hostname: os.hostname(),
-      pid: process.pid,
-    });
-
-    await activeWorker.start();
+  if (!PROJECT_ID) {
+    syncInterval = setInterval(() => syncWorkers(pool), 5000);
   }
 }
 
 async function shutdown(signal: string): Promise<void> {
   logger.info(`${signal} received — initiating worker graceful shutdown`);
 
-  if (activeWorker) {
-    await activeWorker.stop(DRAIN_TIMEOUT_MS);
+  if (syncInterval) clearInterval(syncInterval);
+
+  for (const worker of activeWorkers.values()) {
+    await worker.stop(DRAIN_TIMEOUT_MS);
   }
+  activeWorkers.clear();
 
   await closePool();
   await closeRedis().catch(() => {});
