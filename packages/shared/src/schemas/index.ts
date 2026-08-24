@@ -36,13 +36,13 @@ export const UpdateQueueSchema = z.object({
 
 export const SubmitJobSchema = z.object({
   name: z.string().min(1).max(256),
-  type: z.nativeEnum(JobType).default(JobType.IMMEDIATE),
+  type: z.nativeEnum(JobType).optional().default(JobType.IMMEDIATE),
   payload: z.record(z.unknown()).optional().default({}),
-  priority: z.number().int().min(1).max(10).default(5),
+  priority: z.coerce.number().int().min(1).max(10).optional().default(5),
   /** ISO 8601 datetime — required for DELAYED/SCHEDULED types */
-  scheduledAt: z.string().datetime().optional(),
-  maxAttempts: z.number().int().min(1).max(100).optional(),
-  timeoutMs: z.number().int().min(100).optional(),
+  scheduledAt: z.string().optional(),
+  maxAttempts: z.coerce.number().int().min(1).max(100).optional(),
+  timeoutMs: z.coerce.number().int().min(100).optional(),
   retryPolicy: RetryPolicySchema.optional(),
 });
 

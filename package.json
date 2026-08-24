@@ -2,6 +2,12 @@
   "name": "distributed-job-scheduler",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@10.8.2",
+  "workspaces": [
+    "frontend",
+    "packages/*",
+    "backend/*"
+  ],
   "scripts": {
     "install:all": "npm run install:shared && npm run install:backend-shared && npm run install:api && npm run install:scheduler && npm run install:worker && npm run install:frontend",
     "install:shared": "npm install --install-links --prefix packages/shared",
@@ -36,6 +42,7 @@
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "eslint": "^8.57.0"
+    ,"turbo": "^2.10.1"
   },
   "engines": {
     "node": ">=20.0.0",

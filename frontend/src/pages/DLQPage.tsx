@@ -108,11 +108,11 @@ export const DLQPage: React.FC = () => {
     }
   };
 
-  const summary = stats?.summary || {
-    totalDead: 0,
-    unhandled: 0,
-    retried: 0,
-    archived: 0,
+  const summary = {
+    totalDead: stats?.totalDlqJobs ?? stats?.summary?.totalDead ?? 0,
+    unhandled: stats?.unhandledCount ?? stats?.summary?.unhandled ?? 0,
+    retried: stats?.retriedCount ?? stats?.summary?.retried ?? 0,
+    archived: stats?.archivedCount ?? stats?.summary?.archived ?? 0,
   };
 
   return (

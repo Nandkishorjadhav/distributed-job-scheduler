@@ -99,11 +99,11 @@ export const DashboardPage: React.FC = () => {
 
   // Latency chart data from true percentiles
   const latencyData = [
-    { name: 'Min', duration: Math.round(executionDuration.minDurationMs || 0) },
-    { name: 'p50', duration: Math.round(executionDuration.p50DurationMs || 0) },
-    { name: 'Avg', duration: Math.round(executionDuration.avgDurationMs || 0) },
-    { name: 'p95', duration: Math.round(executionDuration.p95DurationMs || 0) },
-    { name: 'p99', duration: Math.round(executionDuration.p99DurationMs || 0) },
+    { name: 'Min', duration: executionDuration.minDurationMs ?? 0 },
+    { name: 'p50', duration: executionDuration.p50DurationMs ?? 0 },
+    { name: 'Avg', duration: executionDuration.avgDurationMs ?? 0 },
+    { name: 'p95', duration: executionDuration.p95DurationMs ?? 0 },
+    { name: 'p99', duration: executionDuration.p99DurationMs ?? 0 },
   ];
 
   return (
@@ -222,22 +222,38 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={latencyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="name" stroke="#64748b" fontSize={12} />
-                <YAxis stroke="#64748b" fontSize={12} unit="ms" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#0f172a',
-                    borderColor: '#334155',
-                    borderRadius: '8px',
-                  }}
-                  labelStyle={{ color: '#f8fafc' }}
-                />
-                <Bar dataKey="duration" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {executionDuration.totalExecutionsCount === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center border border-dashed border-gray-800 rounded-xl bg-gray-950/40 p-6 text-center">
+                <Activity className="w-8 h-8 text-gray-600 mb-2" />
+                <p className="text-sm font-semibold text-gray-300">No Job Executions Recorded Yet</p>
+                <p className="text-xs text-gray-500 max-w-sm mt-1">
+                  Submit and process jobs with your active worker fleet to view real-time latency percentiles (Min, p50, Avg, p95, p99).
+                </p>
+                <button
+                  onClick={() => navigate('/jobs')}
+                  className="mt-3 px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-xs font-semibold text-blue-400 transition-all"
+                >
+                  Go to Jobs Explorer
+                </button>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={latencyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                  <XAxis dataKey="name" stroke="#64748b" fontSize={12} />
+                  <YAxis stroke="#64748b" fontSize={12} unit="ms" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f172a',
+                      borderColor: '#334155',
+                      borderRadius: '8px',
+                    }}
+                    labelStyle={{ color: '#f8fafc' }}
+                  />
+                  <Bar dataKey="duration" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
