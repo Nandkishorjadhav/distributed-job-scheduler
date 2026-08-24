@@ -79,19 +79,22 @@ export async function getSystemMetrics(
 
     if (projectId) {
       const proj = await getProjectRepository().findById(projectId);
-      if (proj) {
-        await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
+      if (!proj) {
+        throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
       }
+      await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
     }
 
     if (queueId) {
       const q = await getQueueRepository().findById(queueId);
-      if (q) {
-        const proj = await getProjectRepository().findById(q.projectId);
-        if (proj) {
-          await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
-        }
+      if (!q) {
+        throw new AppError(404, 'Queue not found', 'QUEUE_NOT_FOUND');
       }
+      const proj = await getProjectRepository().findById(q.projectId);
+      if (!proj) {
+        throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
+      }
+      await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
     }
 
     const repo = getMetricsRepository();
@@ -127,9 +130,10 @@ export async function getQueueMetrics(
     }
 
     const proj = await getProjectRepository().findById(q.projectId);
-    if (proj) {
-      await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
+    if (!proj) {
+      throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
     }
+    await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
 
     const repo = getMetricsRepository();
     const metrics = await repo.getSystemMetrics({ queueId });
@@ -161,9 +165,10 @@ export async function getPrometheusMetrics(
 
     if (projectId) {
       const proj = await getProjectRepository().findById(projectId);
-      if (proj) {
-        await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
+      if (!proj) {
+        throw new AppError(404, 'Project not found', 'PROJECT_NOT_FOUND');
       }
+      await checkOrgPermission(req.user.id, proj.organizationId, OrgRole.VIEWER);
     }
 
     const repo = getMetricsRepository();

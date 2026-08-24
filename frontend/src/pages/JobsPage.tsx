@@ -38,6 +38,7 @@ export const JobsPage: React.FC = () => {
   const [newJobQueueId, setNewJobQueueId] = useState('');
   const [newJobName, setNewJobName] = useState('');
   const [newJobType, setNewJobType] = useState('immediate');
+  const [newJobDelaySeconds, setNewJobDelaySeconds] = useState(60);
   const [newJobPayload, setNewJobPayload] = useState('{\n  "key": "value"\n}');
   const [newJobPriority, setNewJobPriority] = useState(5);
 
@@ -174,13 +175,24 @@ export const JobsPage: React.FC = () => {
         return;
       }
 
-      const priorityVal = isNaN(Number(newJobPriority)) || Number(newJobPriority) < 1 ? 5 : Number(newJobPriority);
+      const priorityVal =
+        isNaN(Number(newJobPriority)) || Number(newJobPriority) < 1 ? 5 : Number(newJobPriority);
+
+      let scheduledAt: string | undefined = undefined;
+      if (newJobType === 'delayed') {
+        const delay =
+          isNaN(Number(newJobDelaySeconds)) || Number(newJobDelaySeconds) < 1
+            ? 60
+            : Number(newJobDelaySeconds);
+        scheduledAt = new Date(Date.now() + delay * 1000).toISOString();
+      }
 
       await apiClient.post(`/queues/${newJobQueueId}/jobs`, {
-        name: newJobName,
+        name: newJobName.trim(),
         type: newJobType,
         payload: parsed,
         priority: priorityVal,
+        scheduledAt,
       });
 
       setShowSubmitModal(false);
@@ -415,7 +427,9 @@ export const JobsPage: React.FC = () => {
                   type="button"
                   onClick={() => setSubmitMode('single')}
                   className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
-                    submitMode === 'single' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'
+                    submitMode === 'single'
+                      ? 'bg-blue-600 text-white shadow'
+                      : 'text-gray-400 hover:text-white'
                   }`}
                 >
                   Single Job
@@ -424,7 +438,9 @@ export const JobsPage: React.FC = () => {
                   type="button"
                   onClick={() => setSubmitMode('batch')}
                   className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
-                    submitMode === 'batch' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'
+                    submitMode === 'batch'
+                      ? 'bg-blue-600 text-white shadow'
+                      : 'text-gray-400 hover:text-white'
                   }`}
                 >
                   Batch (Bulk)
@@ -466,7 +482,9 @@ export const JobsPage: React.FC = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div
+                    className={`grid ${newJobType === 'delayed' ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}
+                  >
                     <div>
                       <label className="block text-xs font-semibold text-gray-300 uppercase mb-1.5">
                         Job Type
@@ -480,6 +498,22 @@ export const JobsPage: React.FC = () => {
                         <option value="delayed">Delayed</option>
                       </select>
                     </div>
+
+                    {newJobType === 'delayed' && (
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-300 uppercase mb-1.5">
+                          Delay (sec)
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={newJobDelaySeconds}
+                          onChange={(e) => setNewJobDelaySeconds(parseInt(e.target.value, 10) || 0)}
+                          className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    )}
+
                     <div>
                       <label className="block text-xs font-semibold text-gray-300 uppercase mb-1.5">
                         Priority (1-10)

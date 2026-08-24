@@ -2,14 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
-import {
-  Settings,
-  Plus,
-  Play,
-  Pause,
-  ArrowLeft,
-  AlertTriangle,
-} from 'lucide-react';
+import { Settings, Plus, Play, Pause, ArrowLeft, AlertTriangle } from 'lucide-react';
 
 export const QueueDetailsPage: React.FC = () => {
   const { queueId } = useParams<{ queueId: string }>();
@@ -70,7 +63,9 @@ export const QueueDetailsPage: React.FC = () => {
       setError(null);
     } catch (err: any) {
       if (err.response?.status === 403) {
-        setError('You do not have permission to view this queue. Please ensure you are logged in with an account belonging to this organization.');
+        setError(
+          'You do not have permission to view this queue. Please ensure you are logged in with an account belonging to this organization.'
+        );
       } else if (err.response?.status === 404) {
         setError('Queue not found.');
       }
@@ -145,7 +140,8 @@ export const QueueDetailsPage: React.FC = () => {
         scheduledAt = new Date(Date.now() + delaySeconds * 1000).toISOString();
       }
 
-      const priorityVal = isNaN(Number(jobPriority)) || Number(jobPriority) < 1 ? 5 : Number(jobPriority);
+      const priorityVal =
+        isNaN(Number(jobPriority)) || Number(jobPriority) < 1 ? 5 : Number(jobPriority);
 
       await apiClient.post(`/queues/${queueId}/jobs`, {
         name: jobName,
@@ -323,7 +319,9 @@ export const QueueDetailsPage: React.FC = () => {
                 {jobs.map((job) => (
                   <tr key={job.id} className="hover:bg-gray-850/50 transition-colors">
                     <td className="py-3.5 px-4 font-semibold text-white">{job.name}</td>
-                    <td className="py-3.5 px-4 text-xs font-mono text-gray-400 uppercase">{job.type}</td>
+                    <td className="py-3.5 px-4 text-xs font-mono text-gray-400 uppercase">
+                      {job.type}
+                    </td>
                     <td className="py-3.5 px-4">
                       <StatusBadge status={job.status} type="job" />
                     </td>
@@ -360,7 +358,9 @@ export const QueueDetailsPage: React.FC = () => {
                   type="button"
                   onClick={() => setSubmitMode('single')}
                   className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
-                    submitMode === 'single' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'
+                    submitMode === 'single'
+                      ? 'bg-blue-600 text-white shadow'
+                      : 'text-gray-400 hover:text-white'
                   }`}
                 >
                   Single Job
@@ -369,7 +369,9 @@ export const QueueDetailsPage: React.FC = () => {
                   type="button"
                   onClick={() => setSubmitMode('batch')}
                   className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
-                    submitMode === 'batch' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'
+                    submitMode === 'batch'
+                      ? 'bg-blue-600 text-white shadow'
+                      : 'text-gray-400 hover:text-white'
                   }`}
                 >
                   Batch (Bulk)

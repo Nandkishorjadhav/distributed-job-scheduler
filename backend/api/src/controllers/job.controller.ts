@@ -1,6 +1,19 @@
 import { Response, NextFunction } from 'express';
-import { OrgRole, SubmitJobInput, SubmitBatchInput, CreateJobDirectInput, CreateRecurringJobInput, JobFilterInput, LogLevel } from '@job-scheduler/shared';
-import { JobRepository, QueueRepository, ProjectRepository, getPool } from '@job-scheduler/backend-shared';
+import {
+  OrgRole,
+  SubmitJobInput,
+  SubmitBatchInput,
+  CreateJobDirectInput,
+  CreateRecurringJobInput,
+  JobFilterInput,
+  LogLevel,
+} from '@job-scheduler/shared';
+import {
+  JobRepository,
+  QueueRepository,
+  ProjectRepository,
+  getPool,
+} from '@job-scheduler/backend-shared';
 import { AuthenticatedRequest } from '../middleware/authenticate';
 import { checkOrgPermission } from '../middleware/authorization';
 import { AppError } from '../middleware/errorHandler';
@@ -24,7 +37,8 @@ export async function createJob(
       throw new AppError(400, 'queueId is required', 'QUEUE_ID_REQUIRED');
     }
 
-    const { name, type, payload, priority, scheduledAt, maxAttempts, timeoutMs } = req.body as SubmitJobInput;
+    const { name, type, payload, priority, scheduledAt, maxAttempts, timeoutMs } =
+      req.body as SubmitJobInput;
 
     const queueRepo = getQueueRepository();
     const queue = await queueRepo.findById(queueId);
@@ -90,10 +104,7 @@ export async function createBatchJobs(
     await checkOrgPermission(req.user.id, project.organizationId, OrgRole.MEMBER);
 
     const jobRepo = getJobRepository();
-    const batchResult = await jobRepo.createBatch(
-      { queueId, name, description, jobs },
-      project.id
-    );
+    const batchResult = await jobRepo.createBatch({ queueId, name, description, jobs }, project.id);
 
     res.status(201).json({
       success: true,
@@ -203,7 +214,7 @@ export async function listJobs(
     };
 
     const { page, pageSize, status, search, type, projectId } = query;
-    const queueId = (req.params.queueId || query.queueId);
+    const queueId = req.params.queueId || query.queueId;
 
     if (queueId) {
       const queueRepo = getQueueRepository();
@@ -284,7 +295,11 @@ export async function cancelJob(
         data: { job: cancelledJob },
       });
     } catch (err: unknown) {
-      throw new AppError(400, (err as Error).message || 'Job cannot be cancelled', 'JOB_CANNOT_BE_CANCELLED');
+      throw new AppError(
+        400,
+        (err as Error).message || 'Job cannot be cancelled',
+        'JOB_CANNOT_BE_CANCELLED'
+      );
     }
   } catch (err) {
     next(err);
@@ -330,7 +345,11 @@ export async function retryJob(
         data: { job: retriedJob },
       });
     } catch (err: unknown) {
-      throw new AppError(400, (err as Error).message || 'Job cannot be retried', 'JOB_CANNOT_BE_RETRIED');
+      throw new AppError(
+        400,
+        (err as Error).message || 'Job cannot be retried',
+        'JOB_CANNOT_BE_RETRIED'
+      );
     }
   } catch (err) {
     next(err);

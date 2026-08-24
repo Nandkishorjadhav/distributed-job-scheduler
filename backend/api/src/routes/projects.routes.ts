@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { CreateProjectSchema, UpdateProjectSchema, ProjectQuerySchema } from '@job-scheduler/shared';
+import {
+  CreateProjectSchema,
+  UpdateProjectSchema,
+  ProjectQuerySchema,
+} from '@job-scheduler/shared';
 import { validate, validateQuery } from '../middleware/validate';
 import {
   createProject,

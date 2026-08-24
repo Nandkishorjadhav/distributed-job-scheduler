@@ -255,7 +255,9 @@ describe('Distributed Worker Job-Claiming Concurrency Tests', () => {
       expect(claimed).not.toBeNull();
       expect(claimed!.id).toBe(job.id);
 
-      const completed = await claimService.completeJob(job.id, workerIds[0], { output: 'success_data' });
+      const completed = await claimService.completeJob(job.id, workerIds[0], {
+        output: 'success_data',
+      });
       expect(completed.status).toBe(JobStatus.COMPLETED);
       expect(completed.result).toEqual({ output: 'success_data' });
       expect(completed.finishedAt).not.toBeNull();
@@ -287,7 +289,10 @@ describe('Distributed Worker Job-Claiming Concurrency Tests', () => {
       expect(failedAttempt1.nextAttemptAt).not.toBeNull();
 
       // Reset next_attempt_at to past so it is eligible for retry
-      await pool.query(`UPDATE jobs SET next_attempt_at = NOW() - INTERVAL '1 second', status = 'pending' WHERE id = $1`, [job.id]);
+      await pool.query(
+        `UPDATE jobs SET next_attempt_at = NOW() - INTERVAL '1 second', status = 'pending' WHERE id = $1`,
+        [job.id]
+      );
 
       // Attempt 2: Claim and fail again (reaches maxAttempts = 2)
       const claimAttempt2 = await claimService.claimJob(workerIds[1], queueId);

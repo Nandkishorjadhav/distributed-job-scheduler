@@ -1,5 +1,11 @@
 import { Pool } from 'pg';
-import { JobStatus, JobType, LogLevel, SubmitJobInput, CreateRecurringJobInput } from '@job-scheduler/shared';
+import {
+  JobStatus,
+  JobType,
+  LogLevel,
+  SubmitJobInput,
+  CreateRecurringJobInput,
+} from '@job-scheduler/shared';
 import { assertStateTransition } from '../../domain/JobStateMachine';
 
 export interface JobResponse {
@@ -108,6 +114,9 @@ export class JobRepository {
 
     if (data.scheduledAt) {
       scheduledAtDate = new Date(data.scheduledAt);
+    } else if (jobType === JobType.DELAYED || jobType === JobType.SCHEDULED) {
+      // Default to 60s in future if delayed was selected without explicit timestamp
+      scheduledAtDate = new Date(Date.now() + 60000);
     }
 
     let initialStatus = JobStatus.PENDING;
@@ -159,7 +168,11 @@ export class JobRepository {
         VALUES ($1, $2, $3)
         RETURNING id
       `;
-      const batchRes = await client.query(batchQuery, [projectId, data.name.trim(), data.description ? data.description.trim() : null]);
+      const batchRes = await client.query(batchQuery, [
+        projectId,
+        data.name.trim(),
+        data.description ? data.description.trim() : null,
+      ]);
       const batchGroupId = batchRes.rows[0].id;
 
       const createdJobs: JobResponse[] = [];
@@ -167,7 +180,11 @@ export class JobRepository {
       for (const jobInput of data.jobs) {
         const scheduledAtDate = jobInput.scheduledAt ? new Date(jobInput.scheduledAt) : null;
         let initialStatus = JobStatus.PENDING;
-        if ((jobInput.type === JobType.DELAYED || jobInput.type === JobType.SCHEDULED) && scheduledAtDate && scheduledAtDate.getTime() > Date.now()) {
+        if (
+          (jobInput.type === JobType.DELAYED || jobInput.type === JobType.SCHEDULED) &&
+          scheduledAtDate &&
+          scheduledAtDate.getTime() > Date.now()
+        ) {
           initialStatus = JobStatus.SCHEDULED;
         }
 
@@ -249,7 +266,11 @@ export class JobRepository {
       description: row.description,
       cronExpression: row.cron_expression,
       timezone: row.timezone,
-      payloadTemplate: row.payload_template ? (typeof row.payload_template === 'string' ? JSON.parse(row.payload_template) : row.payload_template) : {},
+      payloadTemplate: row.payload_template
+        ? typeof row.payload_template === 'string'
+          ? JSON.parse(row.payload_template)
+          : row.payload_template
+        : {},
       priority: parseInt(row.priority, 10),
       timeoutMs: row.timeout_ms !== null ? parseInt(row.timeout_ms, 10) : null,
       maxAttempts: parseInt(row.max_attempts, 10),
@@ -348,7 +369,13 @@ export class JobRepository {
     userId: string,
     page: number,
     pageSize: number,
-    filters?: { queueId?: string; projectId?: string; status?: string; type?: string; search?: string }
+    filters?: {
+      queueId?: string;
+      projectId?: string;
+      status?: string;
+      type?: string;
+      search?: string;
+    }
   ): Promise<{ data: JobResponse[]; total: number }> {
     const offset = (page - 1) * pageSize;
     const params: unknown[] = [userId];
@@ -530,7 +557,11 @@ export class JobRepository {
       startedAt: new Date(row.started_at),
       finishedAt: row.finished_at ? new Date(row.finished_at) : null,
       durationMs: row.duration_ms !== null ? parseInt(row.duration_ms, 10) : null,
-      result: row.result ? (typeof row.result === 'string' ? JSON.parse(row.result) : row.result) : null,
+      result: row.result
+        ? typeof row.result === 'string'
+          ? JSON.parse(row.result)
+          : row.result
+        : null,
       errorMessage: row.error_message,
       errorCode: row.error_code,
       exitSignal: row.exit_signal,
@@ -561,7 +592,11 @@ export class JobRepository {
       startedAt: new Date(row.started_at),
       finishedAt: row.finished_at ? new Date(row.finished_at) : null,
       durationMs: row.duration_ms !== null ? parseInt(row.duration_ms, 10) : null,
-      result: row.result ? (typeof row.result === 'string' ? JSON.parse(row.result) : row.result) : null,
+      result: row.result
+        ? typeof row.result === 'string'
+          ? JSON.parse(row.result)
+          : row.result
+        : null,
       errorMessage: row.error_message,
       errorCode: row.error_code,
       exitSignal: row.exit_signal,
@@ -597,7 +632,11 @@ export class JobRepository {
       executionId: row.execution_id,
       level: row.level as LogLevel,
       message: row.message,
-      metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : null,
+      metadata: row.metadata
+        ? typeof row.metadata === 'string'
+          ? JSON.parse(row.metadata)
+          : row.metadata
+        : null,
       loggedAt: new Date(row.logged_at),
     }));
   }
@@ -627,7 +666,11 @@ export class JobRepository {
       name: row.name as string,
       type: row.type as JobType,
       status: row.status as JobStatus,
-      payload: row.payload ? (typeof row.payload === 'string' ? JSON.parse(row.payload) : (row.payload as Record<string, unknown>)) : {},
+      payload: row.payload
+        ? typeof row.payload === 'string'
+          ? JSON.parse(row.payload)
+          : (row.payload as Record<string, unknown>)
+        : {},
       priority: parseInt(row.priority as string, 10),
       scheduledAt: row.scheduled_at ? new Date(row.scheduled_at as string) : null,
       runAt: row.run_at ? new Date(row.run_at as string) : null,
@@ -635,7 +678,11 @@ export class JobRepository {
       maxAttempts: parseInt(row.max_attempts as string, 10),
       nextAttemptAt: row.next_attempt_at ? new Date(row.next_attempt_at as string) : null,
       timeoutMs: row.timeout_ms !== null ? parseInt(row.timeout_ms as string, 10) : null,
-      result: row.result ? (typeof row.result === 'string' ? JSON.parse(row.result) : (row.result as Record<string, unknown>)) : null,
+      result: row.result
+        ? typeof row.result === 'string'
+          ? JSON.parse(row.result)
+          : (row.result as Record<string, unknown>)
+        : null,
       errorMessage: (row.error_message as string) ?? null,
       errorCode: (row.error_code as string) ?? null,
       enqueuedAt: new Date(row.enqueued_at as string),

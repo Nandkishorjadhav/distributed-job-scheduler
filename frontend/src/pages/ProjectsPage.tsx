@@ -155,7 +155,9 @@ export const ProjectsPage: React.FC = () => {
               : 'Create a project inside your organization to start dispatching distributed queues.'}
           </p>
           <button
-            onClick={() => (orgs.length === 0 ? setShowCreateOrg(true) : setShowCreateProject(true))}
+            onClick={() =>
+              orgs.length === 0 ? setShowCreateOrg(true) : setShowCreateProject(true)
+            }
             className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold"
           >
             {orgs.length === 0 ? 'Create Organization' : 'Create Project'}
@@ -214,7 +216,8 @@ export const ProjectsPage: React.FC = () => {
                   value={orgName}
                   onChange={(e) => {
                     setOrgName(e.target.value);
-                    if (!orgSlug) setOrgSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'));
+                    if (!orgSlug)
+                      setOrgSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'));
                   }}
                   className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
                 />
@@ -284,7 +287,8 @@ export const ProjectsPage: React.FC = () => {
                   value={projectName}
                   onChange={(e) => {
                     setProjectName(e.target.value);
-                    if (!projectSlug) setProjectSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'));
+                    if (!projectSlug)
+                      setProjectSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'));
                   }}
                   className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
                 />

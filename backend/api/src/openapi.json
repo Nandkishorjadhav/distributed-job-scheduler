@@ -170,7 +170,14 @@
       "get": {
         "summary": "Get Organization Details",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "orgId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "orgId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "Organization details" }
         }
@@ -181,7 +188,11 @@
         "summary": "List Projects",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
-          { "name": "organizationId", "in": "query", "schema": { "type": "string", "format": "uuid" } },
+          {
+            "name": "organizationId",
+            "in": "query",
+            "schema": { "type": "string", "format": "uuid" }
+          },
           { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
           { "name": "pageSize", "in": "query", "schema": { "type": "integer", "default": 20 } }
         ],
@@ -218,7 +229,14 @@
       "get": {
         "summary": "Get Project",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "projectId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "Project details" }
         }
@@ -226,7 +244,14 @@
       "delete": {
         "summary": "Safe Delete Project",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "projectId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "Project deleted safely" }
         }
@@ -275,7 +300,14 @@
       "post": {
         "summary": "Pause Queue",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "queueId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "queueId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "Queue paused" }
         }
@@ -285,7 +317,14 @@
       "post": {
         "summary": "Resume Queue",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "queueId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "queueId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "Queue resumed" }
         }
@@ -295,7 +334,14 @@
       "get": {
         "summary": "Get Queue Statistics",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "queueId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "queueId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "Live queue counters" }
         }
@@ -306,7 +352,12 @@
         "summary": "List Jobs in Queue",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
-          { "name": "queueId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          {
+            "name": "queueId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
           { "name": "status", "in": "query", "schema": { "type": "string" } },
           { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
           { "name": "pageSize", "in": "query", "schema": { "type": "integer", "default": 20 } }
@@ -318,7 +369,14 @@
       "post": {
         "summary": "Submit Job to Queue",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "queueId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "queueId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -346,7 +404,14 @@
       "post": {
         "summary": "Submit Batch Jobs",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "queueId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "queueId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -371,7 +436,14 @@
       "post": {
         "summary": "Create Recurring Cron Schedule",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "queueId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "queueId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -398,7 +470,14 @@
       "get": {
         "summary": "Get Job Details",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "jobId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "Job details" }
         }
@@ -408,7 +487,14 @@
       "post": {
         "summary": "Cancel Job",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "jobId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "Job cancelled" }
         }
@@ -418,7 +504,14 @@
       "post": {
         "summary": "Retry Failed Job",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "jobId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "Job re-enqueued" }
         }
@@ -428,7 +521,14 @@
       "get": {
         "summary": "Get Job Execution Attempt History",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "jobId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "List of execution attempts" }
         }
@@ -439,8 +539,17 @@
         "summary": "Get Job Execution Logs",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
-          { "name": "jobId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
-          { "name": "level", "in": "query", "schema": { "type": "string", "enum": ["debug", "info", "warn", "error"] } }
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["debug", "info", "warn", "error"] }
+          }
         ],
         "responses": {
           "200": { "description": "List of log lines" }
@@ -451,7 +560,14 @@
       "get": {
         "summary": "Get Complete Job History Audit Trail",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "jobId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "Job details + executions + logs" }
         }
@@ -463,7 +579,11 @@
         "security": [{ "BearerAuth": [] }],
         "parameters": [
           { "name": "queueId", "in": "query", "schema": { "type": "string", "format": "uuid" } },
-          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["unhandled", "retried", "archived"] } },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["unhandled", "retried", "archived"] }
+          },
           { "name": "search", "in": "query", "schema": { "type": "string" } },
           { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
           { "name": "pageSize", "in": "query", "schema": { "type": "integer", "default": 20 } }
@@ -486,7 +606,14 @@
       "get": {
         "summary": "Inspect DLQ Job",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "dlqId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "dlqId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "DLQ snapshot + executions + logs" }
         }
@@ -494,7 +621,14 @@
       "delete": {
         "summary": "Delete DLQ Job",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "dlqId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "dlqId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "DLQ job permanently deleted" }
         }
@@ -504,7 +638,14 @@
       "post": {
         "summary": "Re-queue DLQ Job",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "dlqId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "dlqId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "Job re-queued successfully" }
         }
@@ -514,7 +655,14 @@
       "post": {
         "summary": "Archive DLQ Job",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "dlqId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "dlqId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "Job marked as archived" }
         }
@@ -565,7 +713,14 @@
       "post": {
         "summary": "Submit Worker Heartbeat",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "workerId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "workerId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -589,7 +744,14 @@
       "get": {
         "summary": "Get Worker Details & Assigned Running Jobs",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "workerId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "workerId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "Worker details + running jobs + heartbeats" }
         }
@@ -599,7 +761,14 @@
       "post": {
         "summary": "Stop Worker Process",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "workerId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "parameters": [
+          {
+            "name": "workerId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
         "responses": {
           "200": { "description": "Worker marked as stopped" }
         }
@@ -609,7 +778,13 @@
       "post": {
         "summary": "Scan Stale Workers",
         "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "timeoutSeconds", "in": "query", "schema": { "type": "integer", "default": 30 } }],
+        "parameters": [
+          {
+            "name": "timeoutSeconds",
+            "in": "query",
+            "schema": { "type": "integer", "default": 30 }
+          }
+        ],
         "responses": {
           "200": { "description": "Stale workers scanned and marked unhealthy" }
         }

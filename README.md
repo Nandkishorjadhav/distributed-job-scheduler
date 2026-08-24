@@ -3,6 +3,8 @@
 A production-inspired, multi-tenant platform for scheduling and executing
 asynchronous background jobs across a distributed group of workers.
 
+> 📖 **New to the project?** Follow the sequential [**Reading & Learning Guide (`READING_GUIDE.md`)**](./READING_GUIDE.md) to understand the system step-by-step from beginner to advanced.
+
 The project demonstrates how a job processing system can combine an HTTP API,
 durable storage, distributed coordination, and horizontally scalable workers
 while remaining observable and resilient to failures.
@@ -82,22 +84,22 @@ limits prevent one process from consuming unlimited resources.
 
 The system implements a 4-tier hierarchy: `OWNER (4) > ADMIN (3) > MEMBER (2) > VIEWER (1)`.
 
-| Action / Capability | Minimum Required Role | Allowed Roles | Description |
-| :--- | :---: | :--- | :--- |
-| **Create Organization** | *Authenticated User* | All registered users | Any authenticated user can create an Organization and becomes its **`OWNER`**. |
-| **Delete Organization** | **`OWNER`** | `OWNER` | Permanent deletion of the tenant boundary and all child resources. |
-| **Manage Org Members** | **`ADMIN`** | `OWNER`, `ADMIN` | Invite users, remove members, or adjust member roles. |
-| **Create Project** | **`ADMIN`** | `OWNER`, `ADMIN` | Create a new project within the organization. |
-| **Delete Project** | **`ADMIN`** | `OWNER`, `ADMIN` | Delete empty projects (blocked if active queues exist). |
-| **Create Queue** | **`ADMIN`** | `OWNER`, `ADMIN` | Create new queues with priority, concurrency limits, and retry policies. |
-| **Configure Queue Settings** | **`ADMIN`** | `OWNER`, `ADMIN` | Edit concurrency limits, priority, retry backoff strategies, or DLQ toggles. |
-| **Pause / Resume Queue** | **`ADMIN`** | `OWNER`, `ADMIN` | Temporarily halt or restart job claiming on a queue. |
-| **Delete Queue** | **`ADMIN`** | `OWNER`, `ADMIN` | Safe deletion of queues with no running in-flight jobs. |
-| **Submit Job** | **`MEMBER`** | `OWNER`, `ADMIN`, `MEMBER` | Enqueue immediate, delayed, scheduled, recurring cron, or batch jobs. |
-| **Retry / Cancel Job** | **`MEMBER`** | `OWNER`, `ADMIN`, `MEMBER` | Re-queue failed/dead jobs or cancel pending/scheduled jobs. |
-| **Manage DLQ (Retry/Archive/Delete)** | **`ADMIN`** | `OWNER`, `ADMIN` | Quarantine maintenance and dead job re-queuing. |
-| **View Jobs & Execution History** | **`VIEWER`** | `OWNER`, `ADMIN`, `MEMBER`, `VIEWER` | Inspect job payloads, statuses, attempt breakdowns, and execution log streams. |
-| **View Queues & Telemetry** | **`VIEWER`** | `OWNER`, `ADMIN`, `MEMBER`, `VIEWER` | Read-only access to queue depths, worker status, and system metrics. |
+| Action / Capability                   | Minimum Required Role | Allowed Roles                        | Description                                                                    |
+| :------------------------------------ | :-------------------: | :----------------------------------- | :----------------------------------------------------------------------------- |
+| **Create Organization**               | _Authenticated User_  | All registered users                 | Any authenticated user can create an Organization and becomes its **`OWNER`**. |
+| **Delete Organization**               |      **`OWNER`**      | `OWNER`                              | Permanent deletion of the tenant boundary and all child resources.             |
+| **Manage Org Members**                |      **`ADMIN`**      | `OWNER`, `ADMIN`                     | Invite users, remove members, or adjust member roles.                          |
+| **Create Project**                    |      **`ADMIN`**      | `OWNER`, `ADMIN`                     | Create a new project within the organization.                                  |
+| **Delete Project**                    |      **`ADMIN`**      | `OWNER`, `ADMIN`                     | Delete empty projects (blocked if active queues exist).                        |
+| **Create Queue**                      |      **`ADMIN`**      | `OWNER`, `ADMIN`                     | Create new queues with priority, concurrency limits, and retry policies.       |
+| **Configure Queue Settings**          |      **`ADMIN`**      | `OWNER`, `ADMIN`                     | Edit concurrency limits, priority, retry backoff strategies, or DLQ toggles.   |
+| **Pause / Resume Queue**              |      **`ADMIN`**      | `OWNER`, `ADMIN`                     | Temporarily halt or restart job claiming on a queue.                           |
+| **Delete Queue**                      |      **`ADMIN`**      | `OWNER`, `ADMIN`                     | Safe deletion of queues with no running in-flight jobs.                        |
+| **Submit Job**                        |     **`MEMBER`**      | `OWNER`, `ADMIN`, `MEMBER`           | Enqueue immediate, delayed, scheduled, recurring cron, or batch jobs.          |
+| **Retry / Cancel Job**                |     **`MEMBER`**      | `OWNER`, `ADMIN`, `MEMBER`           | Re-queue failed/dead jobs or cancel pending/scheduled jobs.                    |
+| **Manage DLQ (Retry/Archive/Delete)** |      **`ADMIN`**      | `OWNER`, `ADMIN`                     | Quarantine maintenance and dead job re-queuing.                                |
+| **View Jobs & Execution History**     |     **`VIEWER`**      | `OWNER`, `ADMIN`, `MEMBER`, `VIEWER` | Inspect job payloads, statuses, attempt breakdowns, and execution log streams. |
+| **View Queues & Telemetry**           |     **`VIEWER`**      | `OWNER`, `ADMIN`, `MEMBER`, `VIEWER` | Read-only access to queue depths, worker status, and system metrics.           |
 
 ## Reliability and Scaling
 
@@ -158,5 +160,3 @@ docs/                  Database and architecture documentation
 - **REST API Standards & OpenAPI Specification**: [docs/13_api_standards_and_openapi.md](docs/13_api_standards_and_openapi.md)
 - **Production Observability & Metrics**: [docs/14_production_observability_and_metrics.md](docs/14_production_observability_and_metrics.md)
 - **React Operations Dashboard**: [docs/15_react_dashboard_application.md](docs/15_react_dashboard_application.md)
-
-

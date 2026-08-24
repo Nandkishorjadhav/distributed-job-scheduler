@@ -9,7 +9,9 @@ export { Worker, WorkerOptions, JobHandlerRegistry, JobHandler, JobExecutionCont
 const CONCURRENCY = Number(process.env.WORKER_CONCURRENCY ?? 5);
 const HEARTBEAT_INTERVAL_MS = Number(process.env.WORKER_HEARTBEAT_INTERVAL_MS ?? 10000);
 const POLL_INTERVAL_MS = Number(process.env.WORKER_POLL_INTERVAL_MS ?? 1000);
-const DRAIN_TIMEOUT_MS = Number(process.env.WORKER_DRAIN_TIMEOUT_MS ?? process.env.WORKER_SHUTDOWN_TIMEOUT_MS ?? 30000);
+const DRAIN_TIMEOUT_MS = Number(
+  process.env.WORKER_DRAIN_TIMEOUT_MS ?? process.env.WORKER_SHUTDOWN_TIMEOUT_MS ?? 30000
+);
 const PROJECT_ID = process.env.WORKER_PROJECT_ID;
 const QUEUE_ID = process.env.WORKER_QUEUE_ID;
 

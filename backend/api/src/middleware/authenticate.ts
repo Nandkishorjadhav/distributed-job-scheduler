@@ -4,6 +4,19 @@ import jwt from 'jsonwebtoken';
 import { getPool } from '@job-scheduler/backend-shared';
 import { AppError } from './errorHandler';
 
+export function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'FATAL SECURITY CONFIGURATION: JWT_SECRET environment variable must be set in production'
+      );
+    }
+    return 'dev_secret_key_change_in_production_32char';
+  }
+  return secret;
+}
+
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
@@ -57,11 +70,19 @@ export async function authenticate(
       }
 
       if (row.user_is_active === false) {
-        return next(new AppError(401, 'Account associated with this API key is deactivated', 'ACCOUNT_INACTIVE'));
+        return next(
+          new AppError(
+            401,
+            'Account associated with this API key is deactivated',
+            'ACCOUNT_INACTIVE'
+          )
+        );
       }
 
       // Update last_used_at timestamp asynchronously
-      pool.query('UPDATE api_keys SET last_used_at = NOW() WHERE id = $1', [row.id]).catch(() => {});
+      pool
+        .query('UPDATE api_keys SET last_used_at = NOW() WHERE id = $1', [row.id])
+        .catch(() => {});
 
       req.user = {
         id: row.user_id || row.created_by,
@@ -83,11 +104,14 @@ export async function authenticate(
     return next(new AppError(401, 'Missing or invalid authorization header', 'UNAUTHORIZED'));
   }
 
-  const token = authHeader.slice(7);
-  const secret = process.env.JWT_SECRET || 'dev_secret_key_change_in_production_32char';
+  const token = authHeader.slice(7).trim();
+  const secret = getJwtSecret();
 
   try {
-    const payload = jwt.verify(token, secret) as { id: string; email: string };
+    const payload = jwt.verify(token, secret, { algorithms: ['HS256'] }) as {
+      id: string;
+      email: string;
+    };
     req.user = { id: payload.id, email: payload.email };
     next();
   } catch (err: unknown) {

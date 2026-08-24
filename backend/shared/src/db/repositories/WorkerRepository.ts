@@ -267,7 +267,11 @@ export class WorkerRepository {
       workerId: r.worker_id,
       status: r.status as WorkerStatus,
       currentJobCount: parseInt(r.current_job_count, 10),
-      metadata: r.metadata ? (typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata) : {},
+      metadata: r.metadata
+        ? typeof r.metadata === 'string'
+          ? JSON.parse(r.metadata)
+          : r.metadata
+        : {},
       createdAt: new Date(r.created_at),
     }));
   }
@@ -275,14 +279,16 @@ export class WorkerRepository {
   /**
    * Retrieve all currently running jobs assigned to this worker.
    */
-  async getRunningJobs(workerId: string): Promise<Array<{
-    id: string;
-    queueId: string;
-    name: string;
-    status: string;
-    startedAt: Date | null;
-    timeoutMs: number | null;
-  }>> {
+  async getRunningJobs(workerId: string): Promise<
+    Array<{
+      id: string;
+      queueId: string;
+      name: string;
+      status: string;
+      startedAt: Date | null;
+      timeoutMs: number | null;
+    }>
+  > {
     const query = `
       SELECT id, queue_id, name, status, started_at, timeout_ms
       FROM jobs

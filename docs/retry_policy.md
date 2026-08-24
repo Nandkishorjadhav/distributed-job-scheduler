@@ -8,11 +8,11 @@ In a distributed job scheduler, transient failures (such as temporary network gl
 
 ## 1. Retry Strategies Supported
 
-| Strategy | Enum Key | Formula | Example Delays (`initialDelayMs = 1000`) |
-| :--- | :--- | :--- | :--- |
-| **Fixed Delay** | `fixed` | $\text{delay} = \text{initialDelay}$ | `1000ms, 1000ms, 1000ms, 1000ms` |
-| **Linear Backoff** | `linear` | $\text{delay} = \text{initialDelay} \times \text{attempt}$ | `1000ms, 2000ms, 3000ms, 4000ms` |
-| **Exponential Backoff** | `exponential` | $\text{delay} = \text{initialDelay} \times (\text{multiplier})^{\text{attempt} - 1}$ | `1000ms, 2000ms, 4000ms, 8000ms` |
+| Strategy                | Enum Key      | Formula                                                                              | Example Delays (`initialDelayMs = 1000`) |
+| :---------------------- | :------------ | :----------------------------------------------------------------------------------- | :--------------------------------------- |
+| **Fixed Delay**         | `fixed`       | $\text{delay} = \text{initialDelay}$                                                 | `1000ms, 1000ms, 1000ms, 1000ms`         |
+| **Linear Backoff**      | `linear`      | $\text{delay} = \text{initialDelay} \times \text{attempt}$                           | `1000ms, 2000ms, 3000ms, 4000ms`         |
+| **Exponential Backoff** | `exponential` | $\text{delay} = \text{initialDelay} \times (\text{multiplier})^{\text{attempt} - 1}$ | `1000ms, 2000ms, 4000ms, 8000ms`         |
 
 ---
 
@@ -22,12 +22,12 @@ Each policy configuration supports the following parameters:
 
 ```typescript
 interface RetryPolicyConfig {
-  maxAttempts: number;         // Total allowed execution attempts (1 - 100, default: 3)
-  strategy: RetryStrategy;     // 'fixed' | 'linear' | 'exponential' (default: 'exponential')
-  initialDelayMs: number;      // Base delay in milliseconds (default: 1000)
-  maxDelayMs: number;          // Hard ceiling capping the maximum computed delay (default: 30000)
-  backoffMultiplier?: number;  // Multiplier for exponential backoff (default: 2.0)
-  jitterMs?: number;           // Jitter range [0, jitterMs] added to avoid retry storms (default: 500)
+  maxAttempts: number; // Total allowed execution attempts (1 - 100, default: 3)
+  strategy: RetryStrategy; // 'fixed' | 'linear' | 'exponential' (default: 'exponential')
+  initialDelayMs: number; // Base delay in milliseconds (default: 1000)
+  maxDelayMs: number; // Hard ceiling capping the maximum computed delay (default: 30000)
+  backoffMultiplier?: number; // Multiplier for exponential backoff (default: 2.0)
+  jitterMs?: number; // Jitter range [0, jitterMs] added to avoid retry storms (default: 500)
 }
 ```
 
@@ -36,9 +36,11 @@ interface RetryPolicyConfig {
 ## 3. Retry Storm Prevention (Jitter)
 
 ### The Problem (Thundering Herd)
+
 When a shared dependency (such as an external API or relational database) experiences an outage, hundreds or thousands of jobs may fail simultaneously at timestamp $T$. Without jitter, all failed jobs calculate the exact same exponential retry delay $\Delta t$ and retry simultaneously at $T + \Delta t$. This **retry storm** immediately overwhelms and crashes the recovering downstream service again.
 
 ### The Solution: Jitter Dispersion
+
 The [`RetryPolicyCalculator`](file:///d:/Job%20Scheduler/backend/shared/src/domain/RetryPolicyCalculator.ts) adds randomized full jitter to the computed backoff delay:
 
 $$\text{FinalDelay} = \min(\text{RawDelay},\, \text{maxDelayMs}) + \text{Random}(0,\, \text{jitterMs})$$
@@ -81,6 +83,7 @@ $$\text{FinalDelay} = \min(\text{RawDelay},\, \text{maxDelayMs}) + \text{Random}
 ```
 
 ### Steps Executed Atomically on Failure:
+
 1. **Record Execution Attempt**: An entry is upserted into `job_executions` containing:
    - `attempt_number`
    - `status = 'failed'`

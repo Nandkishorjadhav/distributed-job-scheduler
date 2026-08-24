@@ -210,7 +210,11 @@ describe('Organization & Project Management API Tests', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.every((p: { organizationId: string }) => p.organizationId === createdOrgId)).toBe(true);
+      expect(
+        response.body.data.every(
+          (p: { organizationId: string }) => p.organizationId === createdOrgId
+        )
+      ).toBe(true);
     });
 
     it('retrieves project details for an authorized user', async () => {

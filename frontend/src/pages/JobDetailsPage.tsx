@@ -137,7 +137,9 @@ export const JobDetailsPage: React.FC = () => {
             <div className="w-px h-6 bg-gray-800" />
             <div>
               <span className="text-gray-500 uppercase block">Timeout</span>
-              <span className="font-bold text-white">{job?.timeoutMs ? `${job.timeoutMs}ms` : 'None'}</span>
+              <span className="font-bold text-white">
+                {job?.timeoutMs ? `${job.timeoutMs}ms` : 'None'}
+              </span>
             </div>
           </div>
         </div>
@@ -196,7 +198,9 @@ export const JobDetailsPage: React.FC = () => {
 
       {/* Payload Viewer */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-sm space-y-2">
-        <h2 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Job Input Payload</h2>
+        <h2 className="text-xs font-bold text-gray-300 uppercase tracking-wider">
+          Job Input Payload
+        </h2>
         <pre className="p-3 bg-gray-950 border border-gray-800 rounded-lg text-xs font-mono text-blue-300 overflow-x-auto">
           {JSON.stringify(job?.payload, null, 2)}
         </pre>
@@ -212,7 +216,9 @@ export const JobDetailsPage: React.FC = () => {
         </div>
 
         {executions.length === 0 ? (
-          <div className="text-center py-6 text-xs text-gray-500">No execution attempts recorded yet.</div>
+          <div className="text-center py-6 text-xs text-gray-500">
+            No execution attempts recorded yet.
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -258,7 +264,9 @@ export const JobDetailsPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Terminal className="w-4 h-4 text-gray-400" />
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">Execution Log Stream</h2>
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+              Execution Log Stream
+            </h2>
           </div>
           <select
             value={logFilter}
@@ -286,8 +294,8 @@ export const JobDetailsPage: React.FC = () => {
                     l.level === 'error'
                       ? 'text-rose-400'
                       : l.level === 'warn'
-                      ? 'text-amber-400'
-                      : 'text-blue-400'
+                        ? 'text-amber-400'
+                        : 'text-blue-400'
                   }`}
                 >
                   [{l.level}]

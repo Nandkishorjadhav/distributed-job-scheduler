@@ -47,18 +47,22 @@ RETURNING jobs.*;
 ## 2. Why This Strategy Guarantees Reliability
 
 ### 1. Row-Level Exclusive Lock (`FOR UPDATE`)
+
 - When a worker's transaction selects a row with `FOR UPDATE OF j`, PostgreSQL places an **Exclusive Lock** (`ExclusiveLock` in `pg_locks`) on that row.
 - No other transaction can modify or lock the same row until the first transaction commits or rolls back.
 
 ### 2. Lock Skipping (`SKIP LOCKED`)
+
 - Under standard `FOR UPDATE`, competing workers block and wait on locked rows, creating high serialization latency and deadlock risks.
 - `SKIP LOCKED` instructs PostgreSQL's query planner to **skip over any rows that are currently locked by other transactions**.
 - If Worker A locks Job 1, Worker B executing the exact same query in the same millisecond skips Job 1 and immediately claims Job 2 without delay.
 
 ### 3. Single-Statement Atomicity
+
 - By combining the row selection (`WITH eligible_jobs AS (...)`) and `UPDATE` into a single SQL execution plan, there is **zero time window** between choosing a job, locking it, and updating its state to `running` with the assigned `worker_id`.
 
 ### 4. ACID Rollback Guarantee
+
 - If a worker crashes, loses power, or disconnects before issuing `COMMIT`, PostgreSQL's transaction manager automatically executes a `ROLLBACK`.
 - The row lock is released immediately, and the job status remains safely in `pending` with `worker_id = NULL`.
 

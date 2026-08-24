@@ -136,12 +136,7 @@ export const DLQPage: React.FC = () => {
 
       {/* Summary Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatsCard
-          title="Total Quarantined"
-          value={summary.totalDead}
-          icon={Skull}
-          color="rose"
-        />
+        <StatsCard title="Total Quarantined" value={summary.totalDead} icon={Skull} color="rose" />
         <StatsCard
           title="Unhandled (Needs Action)"
           value={summary.unhandled}
@@ -154,12 +149,7 @@ export const DLQPage: React.FC = () => {
           icon={RotateCcw}
           color="blue"
         />
-        <StatsCard
-          title="Archived"
-          value={summary.archived}
-          icon={Archive}
-          color="gray"
-        />
+        <StatsCard title="Archived" value={summary.archived} icon={Archive} color="gray" />
       </div>
 
       {/* Filter Bar */}
@@ -306,7 +296,9 @@ export const DLQPage: React.FC = () => {
                   <span>{selectedDlqJob.name}</span>
                   <StatusBadge status={selectedDlqJob.status} type="dlq" />
                 </h2>
-                <p className="text-xs text-gray-500 font-mono mt-0.5">Job ID: {selectedDlqJob.jobId}</p>
+                <p className="text-xs text-gray-500 font-mono mt-0.5">
+                  Job ID: {selectedDlqJob.jobId}
+                </p>
               </div>
               <button
                 onClick={() => {
@@ -335,7 +327,9 @@ export const DLQPage: React.FC = () => {
 
                 {/* Input Payload */}
                 <div>
-                  <h3 className="font-bold text-gray-300 uppercase tracking-wider mb-1">Job Payload</h3>
+                  <h3 className="font-bold text-gray-300 uppercase tracking-wider mb-1">
+                    Job Payload
+                  </h3>
                   <pre className="p-3 bg-gray-950 border border-gray-800 rounded-lg font-mono text-blue-300 overflow-x-auto">
                     {JSON.stringify(selectedDlqJob.payload, null, 2)}
                   </pre>
@@ -343,7 +337,9 @@ export const DLQPage: React.FC = () => {
 
                 {dlqDetails?.logs && dlqDetails.logs.length > 0 && (
                   <div>
-                    <h3 className="font-bold text-gray-300 uppercase tracking-wider mb-1">Failure Logs</h3>
+                    <h3 className="font-bold text-gray-300 uppercase tracking-wider mb-1">
+                      Failure Logs
+                    </h3>
                     <div className="bg-gray-950 border border-gray-800 rounded-lg p-2.5 max-h-32 overflow-y-auto space-y-1 font-mono text-[11px] text-gray-400">
                       {dlqDetails.logs.map((l: any) => (
                         <div key={l.id} className="truncate">
@@ -357,7 +353,10 @@ export const DLQPage: React.FC = () => {
                 {/* Actions Footer */}
                 <div className="flex items-center justify-between pt-4 border-t border-gray-800">
                   <span className="text-gray-500">
-                    Failed Worker: <strong className="text-gray-300 font-mono">{selectedDlqJob.failedWorkerId || 'Unknown'}</strong>
+                    Failed Worker:{' '}
+                    <strong className="text-gray-300 font-mono">
+                      {selectedDlqJob.failedWorkerId || 'Unknown'}
+                    </strong>
                   </span>
                   <div className="flex gap-2">
                     <button

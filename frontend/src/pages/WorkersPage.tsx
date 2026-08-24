@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
-import {
-  Server,
-  AlertTriangle,
-  RefreshCw,
-  Power,
-  XCircle,
-} from 'lucide-react';
+import { Server, AlertTriangle, RefreshCw, Power, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const WorkersPage: React.FC = () => {
@@ -151,10 +145,7 @@ export const WorkersPage: React.FC = () => {
                         {w.projectName || 'Default Project'}
                       </td>
                       <td className="py-3.5 px-4">
-                        <StatusBadge
-                          status={w.calculatedStatus || w.status}
-                          type="worker"
-                        />
+                        <StatusBadge status={w.calculatedStatus || w.status} type="worker" />
                       </td>
                       <td className="py-3.5 px-4">
                         <div className="text-xs text-gray-300 mb-1">
@@ -166,8 +157,8 @@ export const WorkersPage: React.FC = () => {
                               percentUsed >= 100
                                 ? 'bg-amber-500'
                                 : percentUsed > 0
-                                ? 'bg-blue-500'
-                                : 'bg-gray-700'
+                                  ? 'bg-blue-500'
+                                  : 'bg-gray-700'
                             }`}
                             style={{ width: `${percentUsed}%` }}
                           />
@@ -240,7 +231,9 @@ export const WorkersPage: React.FC = () => {
                     Currently Executing Jobs ({workerDetails?.runningJobs?.length || 0})
                   </h3>
                   {workerDetails?.runningJobs?.length === 0 ? (
-                    <p className="text-xs text-gray-500 italic">No in-flight jobs on this worker.</p>
+                    <p className="text-xs text-gray-500 italic">
+                      No in-flight jobs on this worker.
+                    </p>
                   ) : (
                     <div className="space-y-2">
                       {workerDetails?.runningJobs?.map((rj: any) => (
@@ -280,7 +273,11 @@ export const WorkersPage: React.FC = () => {
                       >
                         <span>{new Date(hb.createdAt).toLocaleTimeString()}</span>
                         <span>{hb.currentJobCount} active jobs</span>
-                        <StatusBadge status={hb.status} type="worker" className="text-[10px] py-0" />
+                        <StatusBadge
+                          status={hb.status}
+                          type="worker"
+                          className="text-[10px] py-0"
+                        />
                       </div>
                     ))}
                   </div>

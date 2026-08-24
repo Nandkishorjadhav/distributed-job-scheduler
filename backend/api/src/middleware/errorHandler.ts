@@ -74,12 +74,32 @@ export function errorHandler(
     return;
   }
 
-  // PostgreSQL Check Constraint Violation (e.g. slug format, priority bounds)
+  // PostgreSQL Check Constraint Violation
   if (err.code === '23514') {
+    const constraint = (err as any).constraint;
+    let customMsg = 'Field value failed validation constraint rules.';
+    if (constraint === 'chk_jobs_scheduled_has_time') {
+      customMsg = 'Delayed and scheduled jobs require a scheduledAt execution timestamp.';
+    } else if (constraint === 'chk_jobs_priority' || constraint === 'chk_queues_priority') {
+      customMsg = 'Priority must be an integer between 1 (lowest) and 10 (highest).';
+    } else if (constraint === 'chk_jobs_max_attempts' || constraint === 'chk_rp_max_attempts') {
+      customMsg = 'Max attempts must be an integer between 1 and 100.';
+    } else if (constraint === 'chk_jobs_timeout') {
+      customMsg = 'Timeout must be at least 100 milliseconds.';
+    } else if (constraint === 'chk_projects_slug_format' || constraint === 'chk_orgs_slug_format') {
+      customMsg =
+        'Slug must be 2-64 lowercase alphanumeric characters with no leading/trailing hyphens.';
+    } else if (constraint === 'chk_queues_concurrency') {
+      customMsg = 'Concurrency limit must be between 1 and 1000.';
+    } else if (err.message) {
+      customMsg = err.message;
+    }
+
     res.status(400).json({
       success: false,
-      error: 'Field value failed format or boundary constraints (e.g. slug must be 2-64 alphanumeric chars with no trailing hyphens)',
+      error: customMsg,
       code: 'CONSTRAINT_VIOLATION',
+      constraint,
       requestId,
     });
     return;

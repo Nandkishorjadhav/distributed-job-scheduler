@@ -28,17 +28,20 @@ Organization ("Acme Corp")
 ## 2. Organization Management
 
 ### 1. Create Organization
+
 - **`POST /api/v1/orgs`**
 - **Body**: `{ "name": "Acme Corp", "slug": "acme-corp" }`
 - **Behavior**: Atomically creates the organization and assigns the requesting user as `OWNER`.
 - **Response `201 Created`**.
 
 ### 2. Get Organization
+
 - **`GET /api/v1/orgs/:orgId`**
 - **Permission**: `VIEWER` or higher.
 - **Response `200 OK`**: Returns organization details and member count.
 
 ### 3. Update Organization
+
 - **`PATCH /api/v1/orgs/:orgId`**
 - **Permission**: `ADMIN` or `OWNER`.
 - **Body**: `{ "name": "Acme Global" }`
@@ -48,6 +51,7 @@ Organization ("Acme Corp")
 ## 3. Project Management
 
 ### 1. Create Project
+
 - **`POST /api/v1/projects`**
 - **Permission**: `ADMIN` or `OWNER` on target organization.
 - **Body**:
@@ -61,6 +65,7 @@ Organization ("Acme Corp")
   ```
 
 ### 2. List Projects
+
 - **`GET /api/v1/projects`**
 - **Query Parameters**:
   - `organizationId`: (Optional) Filter by specific organization.
@@ -69,16 +74,19 @@ Organization ("Acme Corp")
 - **Response `200 OK`**: Returns paginated list of projects accessible to the user.
 
 ### 3. Get Project
+
 - **`GET /api/v1/projects/:projectId`**
 - **Permission**: `VIEWER` or higher.
 - **Response `200 OK`**: Returns project details and organization metadata.
 
 ### 4. Update Project
+
 - **`PATCH /api/v1/projects/:projectId`**
 - **Permission**: `ADMIN` or `OWNER`.
 - **Body**: `{ "name": "Updated Name", "description": "New description" }`
 
 ### 5. Safe Delete Project
+
 - **`DELETE /api/v1/projects/:projectId`**
 - **Permission**: `ADMIN` or `OWNER`.
 - **Safety Guard**: Checks whether any active/running queues exist before deletion. Rejects unsafe deletion with `400 Bad Request` if queues are active.

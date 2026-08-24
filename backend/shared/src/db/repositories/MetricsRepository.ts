@@ -104,7 +104,11 @@ export class MetricsRepository {
       JOIN queues q ON q.id = dlj.queue_id
       ${filter.queueId ? `WHERE dlj.queue_id = $1` : filter.projectId ? `WHERE q.project_id = $1` : ''}
     `;
-    const dlqParams = filter.queueId ? [filter.queueId] : filter.projectId ? [filter.projectId] : [];
+    const dlqParams = filter.queueId
+      ? [filter.queueId]
+      : filter.projectId
+        ? [filter.projectId]
+        : [];
 
     // 3. Execution Duration Percentiles (completed executions)
     const durationQuery = `
@@ -130,7 +134,8 @@ export class MetricsRepository {
       workerConditions.push(`w.project_id = $1`);
       workerParams.push(filter.projectId);
     }
-    const workerWhere = workerConditions.length > 0 ? `WHERE ${workerConditions.join(' AND ')}` : '';
+    const workerWhere =
+      workerConditions.length > 0 ? `WHERE ${workerConditions.join(' AND ')}` : '';
 
     const workerQuery = `
       SELECT

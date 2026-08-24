@@ -35,11 +35,13 @@ describe('Production Observability & Metrics API Tests', () => {
 
   beforeAll(async () => {
     // 1. Register User & authenticate
-    const regRes = await request(app).post('/api/v1/auth/register').send({
-      email: `metrics_tester_${time}@example.com`,
-      password: 'password123',
-      name: 'Metrics Tester',
-    });
+    const regRes = await request(app)
+      .post('/api/v1/auth/register')
+      .send({
+        email: `metrics_tester_${time}@example.com`,
+        password: 'password123',
+        name: 'Metrics Tester',
+      });
     token = regRes.body.data.token;
 
     // 2. Create Org, Project & Queue

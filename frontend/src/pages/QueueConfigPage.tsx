@@ -202,7 +202,8 @@ export const QueueConfigPage: React.FC = () => {
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-sm space-y-4">
           <h2 className="text-base font-bold text-white">Retry & Backoff Policy</h2>
           <p className="text-xs text-gray-400">
-            Determine how jobs in this queue back off upon execution failure to prevent thundering herd retry storms.
+            Determine how jobs in this queue back off upon execution failure to prevent thundering
+            herd retry storms.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

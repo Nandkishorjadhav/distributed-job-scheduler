@@ -20,7 +20,12 @@ import {
   deleteQueue,
   getQueueStats,
 } from '../controllers/queue.controller';
-import { createJob, createBatchJobs, createRecurringJob, listJobs } from '../controllers/job.controller';
+import {
+  createJob,
+  createBatchJobs,
+  createRecurringJob,
+  listJobs,
+} from '../controllers/job.controller';
 import { listDlqJobs, getDlqStats } from '../controllers/dlq.controller';
 
 export const queuesRouter = Router();

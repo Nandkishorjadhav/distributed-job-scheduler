@@ -8,12 +8,12 @@ In a distributed job scheduler, worker nodes can crash, experience hardware fail
 
 ## 1. Worker Lifecycle States
 
-| State | Enum Key | Definition |
-| :--- | :--- | :--- |
-| **`ONLINE`** | `online` | Worker is active, emitting periodic heartbeats, and has spare capacity (`currentJobCount < maxConcurrency`). |
-| **`BUSY`** | `busy` | Worker is active, emitting periodic heartbeats, but running at full capacity (`currentJobCount >= maxConcurrency`). |
-| **`UNHEALTHY`** | `unhealthy` | Worker has missed heartbeats beyond the timeout threshold (`last_heartbeat_at < NOW() - thresholdSeconds`). |
-| **`STOPPED`** | `stopped` | Worker process has cleanly drained, reported stop telemetry, and shut down. |
+| State           | Enum Key    | Definition                                                                                                          |
+| :-------------- | :---------- | :------------------------------------------------------------------------------------------------------------------ |
+| **`ONLINE`**    | `online`    | Worker is active, emitting periodic heartbeats, and has spare capacity (`currentJobCount < maxConcurrency`).        |
+| **`BUSY`**      | `busy`      | Worker is active, emitting periodic heartbeats, but running at full capacity (`currentJobCount >= maxConcurrency`). |
+| **`UNHEALTHY`** | `unhealthy` | Worker has missed heartbeats beyond the timeout threshold (`last_heartbeat_at < NOW() - thresholdSeconds`).         |
+| **`STOPPED`**   | `stopped`   | Worker process has cleanly drained, reported stop telemetry, and shut down.                                         |
 
 ---
 
@@ -43,6 +43,7 @@ In a distributed job scheduler, worker nodes can crash, experience hardware fail
 ### The Problem: The "At-Least-Once vs At-Most-Once" Dilemma
 
 When a worker's heartbeat expires, the distributed system cannot definitively distinguish between three scenarios:
+
 1. **Scenario A (Clean Crash)**: The worker process crashed (e.g. SIGKILL / OOM), and the in-flight job **did not finish**.
 2. **Scenario B (Network Partition / GC Pause)**: The worker is still alive and **still executing the job in the background**, but unable to reach PostgreSQL.
 3. **Scenario C (Completed with Lost ACK)**: The worker **successfully completed the business logic** (e.g. charged a customer's credit card or sent an external webhook), but lost power/network right before writing `status = 'completed'` to the database.
@@ -50,6 +51,7 @@ When a worker's heartbeat expires, the distributed system cannot definitively di
 > [!CAUTION]
 > **The Duplicate Execution Hazard**:
 > If the scheduler blindly resets all running jobs on an unhealthy worker back to `pending` immediately:
+>
 > - In Scenario B, two workers will run the same job concurrently $\rightarrow$ **Race conditions and state corruption**.
 > - In Scenario C, the job will run a second time $\rightarrow$ **Double charging / duplicate side-effects**.
 
@@ -63,17 +65,17 @@ To preserve execution safety, the system enforces the following recovery protoco
 flowchart TD
     A["Worker Heartbeat Expired (>30s)"] --> B["Mark Worker as 'UNHEALTHY'"]
     B --> C{"Inspect Running Jobs on Worker"}
-    
+
     C --> D{"Has Job Execution Timeout Elapsed? (NOW() - started_at > timeout_ms)"}
-    
+
     D -- "No (Job Still Within Timeout Window)" --> E["Hold in Safety Quarantine (Allow Partitioned Worker to Terminate)"]
-    
+
     D -- "Yes (Timeout Elapsed)" --> F{"Is Job Declared Idempotent? Or Has Verification Handler?"}
-    
+
     F -- "Yes (Idempotent Safe)" --> G["Transition to FAILED / PENDING for Worker Retry with attempt_count + 1"]
-    
+
     F -- "No (Non-Idempotent / High-Risk)" --> H["Transition to DEAD_LETTER_QUEUE (DLQ) with error: ERR_WORKER_HEARTBEAT_TIMEOUT"]
-    
+
     H --> I["Require Manual Operator Review / Idempotency Check"]
 ```
 
@@ -90,27 +92,33 @@ flowchart TD
 ## 5. REST APIs Implemented
 
 ### 1. List Workers
+
 - **`GET /api/v1/workers`**
 - **Query Parameters**: `projectId`, `status`, `page`, `pageSize`.
 - Returns paginated list of workers with real-time calculated health status (`online`, `busy`, `unhealthy`, `stopped`).
 
 ### 2. Inspect Single Worker
+
 - **`GET /api/v1/workers/:workerId`**
 - Returns complete worker profile, recent time-series heartbeats, and array of currently assigned running jobs.
 
 ### 3. Register Worker Node
+
 - **`POST /api/v1/workers/register`**
 - **Body**: `{ "projectId": "...", "hostname": "node-01", "pid": 1204, "maxConcurrency": 10 }`
 
 ### 4. Record Worker Heartbeat
+
 - **`POST /api/v1/workers/:workerId/heartbeat`**
 - **Body**: `{ "currentJobCount": 4, "metadata": { "cpu": 25.4, "memMb": 340 } }`
 
 ### 5. Scan Stale Workers
+
 - **`POST /api/v1/workers/stale/scan?timeoutSeconds=30`**
 - Identifies and transitions stale workers to `unhealthy`.
 
 ### 6. Clean Worker Stop
+
 - **`POST /api/v1/workers/:workerId/stop`**
 - Marks worker status as `stopped`.
 

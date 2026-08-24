@@ -241,7 +241,10 @@ describe('Worker Service Lifecycle & Execution Tests', () => {
       // Wait for 2 heartbeats to fire
       await new Promise((r) => setTimeout(r, 260));
 
-      const updatedWorker = await pool.query(`SELECT last_heartbeat_at FROM workers WHERE id = $1`, [worker.id]);
+      const updatedWorker = await pool.query(
+        `SELECT last_heartbeat_at FROM workers WHERE id = $1`,
+        [worker.id]
+      );
       const dbHeartbeat = new Date(updatedWorker.rows[0].last_heartbeat_at).getTime();
 
       expect(dbHeartbeat).toBeGreaterThanOrEqual(initialHeartbeat);

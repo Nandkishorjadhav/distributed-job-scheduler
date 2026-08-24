@@ -16,15 +16,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import {
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-} from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 export const DashboardPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -119,7 +111,9 @@ export const DashboardPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">System Telemetry & Metrics</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">
+            System Telemetry & Metrics
+          </h1>
           <p className="text-sm text-gray-400 mt-0.5">
             Real-time throughput, queue depth, and worker health monitoring
           </p>
@@ -149,7 +143,10 @@ export const DashboardPage: React.FC = () => {
         <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="font-bold">⚡ Public Mode:</span>
-            <span>You are viewing system-wide metrics. Sign in or register to manage your own organizations, projects, and queues.</span>
+            <span>
+              You are viewing system-wide metrics. Sign in or register to manage your own
+              organizations, projects, and queues.
+            </span>
           </div>
           <button
             onClick={() => navigate('/login')}
@@ -231,7 +228,11 @@ export const DashboardPage: React.FC = () => {
                 <XAxis dataKey="name" stroke="#64748b" fontSize={12} />
                 <YAxis stroke="#64748b" fontSize={12} unit="ms" />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px' }}
+                  contentStyle={{
+                    backgroundColor: '#0f172a',
+                    borderColor: '#334155',
+                    borderRadius: '8px',
+                  }}
                   labelStyle={{ color: '#f8fafc' }}
                 />
                 <Bar dataKey="duration" fill="#3b82f6" radius={[4, 4, 0, 0]} />
@@ -253,9 +254,7 @@ export const DashboardPage: React.FC = () => {
                 <ArrowRight className="w-3 h-3" />
               </button>
             </div>
-            <p className="text-xs text-gray-400 mb-4">
-              Real-time liveness and cluster capacity
-            </p>
+            <p className="text-xs text-gray-400 mb-4">Real-time liveness and cluster capacity</p>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 rounded-lg bg-gray-950 border border-gray-800/80">
@@ -295,7 +294,10 @@ export const DashboardPage: React.FC = () => {
                 style={{
                   width: `${
                     workers.totalConcurrencyCapacity > 0
-                      ? Math.min(100, (workers.activeJobSlotsUsed / workers.totalConcurrencyCapacity) * 100)
+                      ? Math.min(
+                          100,
+                          (workers.activeJobSlotsUsed / workers.totalConcurrencyCapacity) * 100
+                        )
                       : 0
                   }%`,
                 }}
@@ -370,7 +372,11 @@ export const DashboardPage: React.FC = () => {
         {queueDepths.length > QUEUES_PER_PAGE && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-4 border-t border-gray-800 text-xs text-gray-400">
             <div>
-              Showing <span className="text-white font-semibold">{(queuePage - 1) * QUEUES_PER_PAGE + 1}</span> to{' '}
+              Showing{' '}
+              <span className="text-white font-semibold">
+                {(queuePage - 1) * QUEUES_PER_PAGE + 1}
+              </span>{' '}
+              to{' '}
               <span className="text-white font-semibold">
                 {Math.min(queuePage * QUEUES_PER_PAGE, queueDepths.length)}
               </span>{' '}

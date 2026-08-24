@@ -27,7 +27,11 @@ export function createApp(): Application {
   );
   app.use(
     cors({
-      origin: (process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN ?? 'http://localhost:5173').split(','),
+      origin: (
+        process.env.CORS_ORIGINS ??
+        process.env.CORS_ORIGIN ??
+        'http://localhost:5173'
+      ).split(','),
       credentials: true,
       exposedHeaders: ['X-Request-Id'],
     })
@@ -104,14 +108,20 @@ export function createApp(): Application {
     let redisStatus = 'disconnected';
 
     try {
-      await getPool().query('SELECT 1');
+      await Promise.race([
+        getPool().query('SELECT 1'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('DB timeout')), 2000)),
+      ]);
       dbStatus = 'connected';
     } catch {
       dbStatus = 'disconnected';
     }
 
     try {
-      await getRedisClient().ping();
+      await Promise.race([
+        getRedisClient().ping(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Redis timeout')), 1000)),
+      ]);
       redisStatus = 'connected';
     } catch {
       redisStatus = 'disconnected';

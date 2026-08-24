@@ -1,5 +1,11 @@
 import 'dotenv/config';
-import { getPool, getRedisClient, logger, closePool, closeRedis } from '@job-scheduler/backend-shared';
+import {
+  getPool,
+  getRedisClient,
+  logger,
+  closePool,
+  closeRedis,
+} from '@job-scheduler/backend-shared';
 import { Scheduler } from './Scheduler';
 
 export {

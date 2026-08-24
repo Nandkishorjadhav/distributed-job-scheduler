@@ -17,9 +17,7 @@ describe('REST API Standards, Request IDs & OpenAPI Specification Tests', () => 
 
     it('preserves and echoes client-supplied X-Request-Id header', async () => {
       const customTraceId = 'client-trace-id-abc-123';
-      const response = await request(app)
-        .get('/api/v1/health')
-        .set('X-Request-Id', customTraceId);
+      const response = await request(app).get('/api/v1/health').set('X-Request-Id', customTraceId);
 
       expect(response.status).toBe(200);
       expect(response.headers['x-request-id']).toBe(customTraceId);

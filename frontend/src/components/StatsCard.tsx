@@ -39,7 +39,9 @@ export const StatsCard: React.FC<StatsCardProps> = ({
       )}
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{title}</span>
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          {title}
+        </span>
         <div className={clsx('p-2 rounded-lg border', colorMap[color])}>
           <Icon className="w-5 h-5" />
         </div>

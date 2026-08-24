@@ -9,20 +9,21 @@ The **Distributed Job Scheduler** observability subsystem provides unified, prod
 ## 1. Structured Logging & Correlation Tracing
 
 ### 1. Unified Context Fields
+
 Every significant lifecycle event captures a standard set of correlation identifiers:
 
-| Context Field | Type | Description |
-| :--- | :--- | :--- |
-| **`requestId`** | `UUID` | HTTP request correlation ID from `X-Request-Id` |
-| **`jobId`** | `UUID` | Unique job instance identifier |
-| **`queueId`** | `UUID` | Parent queue identifier |
-| **`projectId`** | `UUID` | Tenant project boundary |
-| **`workerId`** | `UUID` | Active worker process node ID |
-| **`executionId`** | `UUID` | Execution attempt record ID in `job_executions` |
-| **`attemptNumber`** | `integer` | Current execution attempt counter |
-| **`durationMs`** | `float` | Wall-clock execution runtime in ms |
-| **`retryDelayMs`** | `integer` | Calculated backoff delay before next attempt |
-| **`errorCode`** | `string` | Machine-readable error categorization code |
+| Context Field       | Type      | Description                                     |
+| :------------------ | :-------- | :---------------------------------------------- |
+| **`requestId`**     | `UUID`    | HTTP request correlation ID from `X-Request-Id` |
+| **`jobId`**         | `UUID`    | Unique job instance identifier                  |
+| **`queueId`**       | `UUID`    | Parent queue identifier                         |
+| **`projectId`**     | `UUID`    | Tenant project boundary                         |
+| **`workerId`**      | `UUID`    | Active worker process node ID                   |
+| **`executionId`**   | `UUID`    | Execution attempt record ID in `job_executions` |
+| **`attemptNumber`** | `integer` | Current execution attempt counter               |
+| **`durationMs`**    | `float`   | Wall-clock execution runtime in ms              |
+| **`retryDelayMs`**  | `integer` | Calculated backoff delay before next attempt    |
+| **`errorCode`**     | `string`  | Machine-readable error categorization code      |
 
 ---
 
@@ -67,6 +68,7 @@ Every significant lifecycle event captures a standard set of correlation identif
 The metrics repository computes high-performance aggregate telemetry across 4 core dimensions:
 
 ### 1. Job Summary Counters
+
 - `totalJobs`: Cumulative count of all jobs created.
 - `completedJobs`: Successfully executed jobs.
 - `failedJobs`: In-flight jobs scheduled for retry.
@@ -75,6 +77,7 @@ The metrics repository computes high-performance aggregate telemetry across 4 co
 - `retryCount`: Total number of retry attempts executed.
 
 ### 2. Execution Duration Percentiles
+
 - Calculated over completed execution records:
   - `avgDurationMs`
   - `p50DurationMs` (Median)
@@ -83,21 +86,23 @@ The metrics repository computes high-performance aggregate telemetry across 4 co
   - `minDurationMs` & `maxDurationMs`
 
 ### 3. Worker Health Breakdown
+
 - Counts of workers in `online`, `busy`, `unhealthy`, and `stopped` states.
 - Total worker concurrency capacity vs. currently utilized execution slots.
 
 ### 4. Queue Depths
+
 - Live breakdown of `pendingCount` and `runningCount` per individual queue.
 
 ---
 
 ## 3. Metrics REST Endpoints
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/v1/metrics` | Returns full system/project metrics JSON envelope. |
-| `GET` | `/api/v1/metrics/queues/:queueId` | Returns metrics isolated to a specific queue. |
-| `GET` | `/api/v1/metrics/prometheus` | Exports Prometheus text-format metrics (`text/plain; version=0.0.4`). |
+| Method | Endpoint                          | Description                                                           |
+| :----- | :-------------------------------- | :-------------------------------------------------------------------- |
+| `GET`  | `/api/v1/metrics`                 | Returns full system/project metrics JSON envelope.                    |
+| `GET`  | `/api/v1/metrics/queues/:queueId` | Returns metrics isolated to a specific queue.                         |
+| `GET`  | `/api/v1/metrics/prometheus`      | Exports Prometheus text-format metrics (`text/plain; version=0.0.4`). |
 
 ---
 

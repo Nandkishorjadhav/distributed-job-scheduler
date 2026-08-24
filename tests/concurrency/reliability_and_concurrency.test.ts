@@ -81,7 +81,10 @@ describe('Distributed System Reliability & Concurrency Comprehensive Suite', () 
   });
 
   afterAll(async () => {
-    await pool.query('UPDATE workers SET status = $1 WHERE project_id = $2', [WorkerStatus.STOPPED, projectId]);
+    await pool.query('UPDATE workers SET status = $1 WHERE project_id = $2', [
+      WorkerStatus.STOPPED,
+      projectId,
+    ]);
   });
 
   // ─── 1. Two workers claiming the same job ──────────────────────────────────
@@ -121,7 +124,11 @@ describe('Distributed System Reliability & Concurrency Comprehensive Suite', () 
   // ─── 2. Ten workers processing many jobs ───────────────────────────────────
   describe('2. Ten Workers Processing Many Jobs Concurrently', () => {
     it('processes 40 jobs across 10 workers with zero duplicate claims and complete lifecycle', async () => {
-      const q = await queueRepo.create({ projectId, name: `q2-tenworkers-${Date.now()}`, concurrencyLimit: 50 });
+      const q = await queueRepo.create({
+        projectId,
+        name: `q2-tenworkers-${Date.now()}`,
+        concurrencyLimit: 50,
+      });
       const totalJobs = 40;
       const jobIds: string[] = [];
 
@@ -273,7 +280,11 @@ describe('Distributed System Reliability & Concurrency Comprehensive Suite', () 
   // ─── 5. Maximum retry attempts ────────────────────────────────────────────
   describe('5. Maximum Retry Attempts Exhaustion', () => {
     it('permanently marks job as dead/DLQ when max_attempts is reached on DLQ queue', async () => {
-      const q = await queueRepo.create({ projectId, name: `q5-max-${Date.now()}`, dlqEnabled: true });
+      const q = await queueRepo.create({
+        projectId,
+        name: `q5-max-${Date.now()}`,
+        dlqEnabled: true,
+      });
       const job = await jobRepo.create({
         queueId: q.id,
         name: `max-attempts-job-${Date.now()}`,
@@ -308,7 +319,11 @@ describe('Distributed System Reliability & Concurrency Comprehensive Suite', () 
   // ─── 6. DLQ transition ───────────────────────────────────────────────────
   describe('6. Dead Letter Queue (DLQ) Quarantine Transition', () => {
     it('quarantines permanently failed jobs with full payload snapshot into dead_letter_jobs', async () => {
-      const q = await queueRepo.create({ projectId, name: `q6-dlq-${Date.now()}`, dlqEnabled: true });
+      const q = await queueRepo.create({
+        projectId,
+        name: `q6-dlq-${Date.now()}`,
+        dlqEnabled: true,
+      });
       const job = await jobRepo.create({
         queueId: q.id,
         name: `dlq-target-job-${Date.now()}`,
@@ -480,10 +495,10 @@ describe('Distributed System Reliability & Concurrency Comprehensive Suite', () 
         await client.query('BEGIN');
 
         // Claim job inside transaction
-        await client.query(
-          `UPDATE jobs SET status = 'running', worker_id = $1 WHERE id = $2`,
-          [worker1Id, job.id]
-        );
+        await client.query(`UPDATE jobs SET status = 'running', worker_id = $1 WHERE id = $2`, [
+          worker1Id,
+          job.id,
+        ]);
 
         // Simulate fatal error mid-execution
         throw new Error('Simulated failure during execution setup');

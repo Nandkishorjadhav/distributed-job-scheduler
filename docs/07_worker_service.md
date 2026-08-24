@@ -46,6 +46,7 @@ The **Worker Service** ([`Worker.ts`](file:///d:/Job%20Scheduler/backend/worker/
 ## 2. Real Execution Loop & Concurrency Slot Management
 
 In each polling iteration:
+
 1. **Compute Available Capacity**:
    $$\text{availableSlots} = \text{concurrency} - \text{activeJobCount}$$
 2. **Atomic Claim**:
@@ -75,10 +76,10 @@ const worker = new Worker(getPool(), {
 // Register a custom job handler
 worker.registerHandler('send-email', async (ctx) => {
   await ctx.log('info', `Sending email to ${ctx.payload.to}`);
-  
+
   // Custom business logic
   const result = await emailService.send(ctx.payload);
-  
+
   return { messageId: result.id };
 });
 
@@ -98,6 +99,7 @@ await worker.start();
 ## 5. Graceful Shutdown & Draining
 
 When receiving `SIGTERM` or `SIGINT`:
+
 1. Worker state updates to `WorkerStatus.DRAINING` (and updates DB).
 2. Polling loop is cancelled immediately — **no new jobs are accepted**.
 3. The process awaits all active in-flight jobs up to `WORKER_DRAIN_TIMEOUT_MS` (default: $30\text{ s}$).

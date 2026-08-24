@@ -65,18 +65,19 @@ Client Request
 
 Organization membership assigns one of four hierarchical roles:
 
-| Role | Hierarchy Level | Capabilities |
-| :--- | :---: | :--- |
-| **`OWNER`** | 4 | Full organization control, delete organization, billing, manage admins. |
-| **`ADMIN`** | 3 | Manage projects, queues, workers, DLQ deletion, invite members. |
-| **`MEMBER`** | 2 | Submit jobs, pause/resume queues, cancel/retry jobs, re-queue DLQ jobs. |
-| **`VIEWER`** | 1 | Read-only access to projects, queues, jobs, executions, and metrics. |
+| Role         | Hierarchy Level | Capabilities                                                            |
+| :----------- | :-------------: | :---------------------------------------------------------------------- |
+| **`OWNER`**  |        4        | Full organization control, delete organization, billing, manage admins. |
+| **`ADMIN`**  |        3        | Manage projects, queues, workers, DLQ deletion, invite members.         |
+| **`MEMBER`** |        2        | Submit jobs, pause/resume queues, cancel/retry jobs, re-queue DLQ jobs. |
+| **`VIEWER`** |        1        | Read-only access to projects, queues, jobs, executions, and metrics.    |
 
 ---
 
 ## 4. REST Endpoints
 
 ### 1. Register User
+
 - **`POST /api/v1/auth/register`**
 - **Body**: `{ "email": "user@example.com", "password": "password123", "name": "Jane Doe" }`
 - **Response `201 Created`**:
@@ -92,15 +93,18 @@ Organization membership assigns one of four hierarchical roles:
   ```
 
 ### 2. Login User
+
 - **`POST /api/v1/auth/login`**
 - **Body**: `{ "email": "user@example.com", "password": "password123" }`
 - **Response `200 OK`**: Returns user profile and JWT Bearer token.
 
 ### 3. Current User Endpoint
+
 - **`GET /api/v1/auth/me`** (Protected)
 - **Headers**: `Authorization: Bearer <token>`
 - **Response `200 OK`**: Returns current authenticated user and organization memberships.
 
 ### 4. Logout User
+
 - **`POST /api/v1/auth/logout`** (Protected)
 - **Response `200 OK`**: Clears authentication cookies / session state.

@@ -18,9 +18,13 @@ export class JobHandlerRegistry {
   constructor() {
     // Default handler simulates successful processing with structured payload inspection
     this.defaultHandler = async (ctx) => {
-      await ctx.log(LogLevel.INFO, `Executing job '${ctx.name}' (attempt ${ctx.attemptCount}/${ctx.maxAttempts})`, {
-        payloadKeys: Object.keys(ctx.payload),
-      });
+      await ctx.log(
+        LogLevel.INFO,
+        `Executing job '${ctx.name}' (attempt ${ctx.attemptCount}/${ctx.maxAttempts})`,
+        {
+          payloadKeys: Object.keys(ctx.payload),
+        }
+      );
 
       // If payload explicitly requests failure for testing
       if (ctx.payload?.shouldFail === true) {

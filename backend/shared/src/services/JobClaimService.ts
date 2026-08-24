@@ -102,11 +102,7 @@ export class JobClaimService {
                   jobs.created_at, jobs.updated_at
       `;
 
-      const result = await client.query(claimQuery, [
-        queueId ?? null,
-        effectiveLimit,
-        workerId,
-      ]);
+      const result = await client.query(claimQuery, [queueId ?? null, effectiveLimit, workerId]);
 
       if (result.rows.length > 0) {
         // Atomically increment worker active job count without exceeding max_concurrency
@@ -151,10 +147,7 @@ export class JobClaimService {
     try {
       await client.query('BEGIN');
 
-      const selectRes = await client.query(
-        `SELECT * FROM jobs WHERE id = $1 FOR UPDATE`,
-        [jobId]
-      );
+      const selectRes = await client.query(`SELECT * FROM jobs WHERE id = $1 FOR UPDATE`, [jobId]);
       if (selectRes.rows.length === 0) {
         throw new Error(`Job not found: ${jobId}`);
       }
@@ -541,7 +534,11 @@ export class JobClaimService {
       name: row.name as string,
       type: row.type as JobType,
       status: row.status as JobStatus,
-      payload: row.payload ? (typeof row.payload === 'string' ? JSON.parse(row.payload) : (row.payload as Record<string, unknown>)) : {},
+      payload: row.payload
+        ? typeof row.payload === 'string'
+          ? JSON.parse(row.payload)
+          : (row.payload as Record<string, unknown>)
+        : {},
       priority: parseInt(row.priority as string, 10),
       scheduledAt: row.scheduled_at ? new Date(row.scheduled_at as string) : null,
       runAt: row.run_at ? new Date(row.run_at as string) : null,
@@ -549,7 +546,11 @@ export class JobClaimService {
       maxAttempts: parseInt(row.max_attempts as string, 10),
       nextAttemptAt: row.next_attempt_at ? new Date(row.next_attempt_at as string) : null,
       timeoutMs: row.timeout_ms !== null ? parseInt(row.timeout_ms as string, 10) : null,
-      result: row.result ? (typeof row.result === 'string' ? JSON.parse(row.result) : (row.result as Record<string, unknown>)) : null,
+      result: row.result
+        ? typeof row.result === 'string'
+          ? JSON.parse(row.result)
+          : (row.result as Record<string, unknown>)
+        : null,
       errorMessage: (row.error_message as string) ?? null,
       errorCode: (row.error_code as string) ?? null,
       enqueuedAt: new Date(row.enqueued_at as string),
