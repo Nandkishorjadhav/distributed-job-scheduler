@@ -68,11 +68,13 @@ export class JobClaimService {
           FROM jobs j
           JOIN queues q ON q.id = j.queue_id
           LEFT JOIN worker_info w ON w.id = $3::UUID
-          WHERE j.status = 'pending'
+          WHERE (
+              j.status = 'pending'
+              OR (j.status = 'failed' AND j.next_attempt_at IS NOT NULL AND j.next_attempt_at <= NOW())
+            )
             AND (w.id IS NULL OR q.project_id = w.project_id)
             AND (w.id IS NULL OR w.available_slots > 0)
             AND (j.scheduled_at IS NULL OR j.scheduled_at <= NOW())
-            AND (j.next_attempt_at IS NULL OR j.next_attempt_at <= NOW())
             AND j.attempt_count < j.max_attempts
             AND q.status = 'active'
             AND ($1::UUID IS NULL OR j.queue_id = $1::UUID)

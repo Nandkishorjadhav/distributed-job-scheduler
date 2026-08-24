@@ -423,7 +423,7 @@ CREATE TABLE job_executions (
     duration_ms    INT GENERATED ALWAYS AS (
         CASE
             WHEN finished_at IS NOT NULL
-            THEN EXTRACT(EPOCH FROM (finished_at - started_at))::INT * 1000
+            THEN ROUND(EXTRACT(EPOCH FROM (finished_at - started_at)) * 1000)::INT
             ELSE NULL
         END
     ) STORED,

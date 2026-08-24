@@ -36,15 +36,21 @@ export function errorHandler(
 
   // Zod validation errors
   if (err.name === 'ZodError') {
-    let parsedDetails: unknown = err.message;
+    let parsedDetails: any = err.message;
+    let fieldMsg = '';
     try {
       parsedDetails = JSON.parse(err.message);
+      if (Array.isArray(parsedDetails) && parsedDetails.length > 0) {
+        const first = parsedDetails[0];
+        const path = first.path && first.path.length > 0 ? first.path.join('.') : '';
+        fieldMsg = path ? `: [${path}] ${first.message}` : `: ${first.message}`;
+      }
     } catch {
       // Keep as string if not JSON
     }
     res.status(400).json({
       success: false,
-      error: 'Validation failed',
+      error: `Validation failed${fieldMsg}`,
       code: 'VALIDATION_ERROR',
       details: parsedDetails,
       requestId,

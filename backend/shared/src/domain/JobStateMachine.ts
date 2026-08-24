@@ -14,7 +14,7 @@ const ALLOWED_TRANSITIONS: Record<JobStatus, Set<JobStatus>> = {
     JobStatus.DEAD,
     JobStatus.CANCELLED,
   ]),
-  [JobStatus.FAILED]: new Set([JobStatus.PENDING, JobStatus.DEAD]),
+  [JobStatus.FAILED]: new Set([JobStatus.PENDING, JobStatus.RUNNING, JobStatus.DEAD]),
   [JobStatus.DEAD]: new Set([JobStatus.PENDING]),
   [JobStatus.COMPLETED]: new Set([]), // Terminal state
   [JobStatus.CANCELLED]: new Set([]), // Terminal state

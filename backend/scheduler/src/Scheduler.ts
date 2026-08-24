@@ -124,11 +124,13 @@ export class Scheduler {
           SELECT j.id
           FROM jobs j
           JOIN queues q ON q.id = j.queue_id
-          WHERE j.status = 'scheduled'
-            AND j.scheduled_at <= NOW()
+          WHERE (
+              (j.status = 'scheduled' AND j.scheduled_at <= NOW())
+              OR (j.status = 'failed' AND j.next_attempt_at IS NOT NULL AND j.next_attempt_at <= NOW() AND j.attempt_count < j.max_attempts)
+            )
             AND q.status != 'archived'
             ${projectFilter}
-          ORDER BY j.scheduled_at ASC
+          ORDER BY COALESCE(j.scheduled_at, j.next_attempt_at) ASC
           LIMIT $1
           FOR UPDATE OF j SKIP LOCKED
         )
