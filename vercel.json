@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build:shared && npm run build:frontend",
+  "buildCommand": "npm run build --prefix packages/shared && npm run build --prefix frontend",
   "outputDirectory": "frontend/dist",
   "framework": "vite",
   "rewrites": [
