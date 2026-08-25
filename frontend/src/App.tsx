@@ -161,14 +161,14 @@ export function App() {
 
       {/* ── Footer ─────────────────────────────────────────────── */}
       <footer className="bg-gray-900/80 border-t border-gray-800 px-6 py-2.5 text-center text-xs text-gray-500 flex flex-col sm:flex-row items-center justify-between gap-2">
-        <span>Distributed Job Scheduler Engine · Production Ready</span>
-        <div className="flex items-center gap-4 text-[11px] text-gray-400">
+        <span><i>Engineered by Nandkishor Jadhav</i></span>
+        {/* <div className="flex items-center gap-4 text-[11px] text-gray-400">
           <span>PostgreSQL 17</span>
           <span>·</span>
           <span>Redis 7</span>
           <span>·</span>
           <span>React 18</span>
-        </div>
+        </div> */}
       </footer>
     </div>
   );

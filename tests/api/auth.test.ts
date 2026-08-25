@@ -50,7 +50,8 @@ describe('Auth Module Integration Tests', () => {
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.error).toContain('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
     });
 
     it('rejects password shorter than 8 characters with 400 Bad Request', async () => {
@@ -64,7 +65,8 @@ describe('Auth Module Integration Tests', () => {
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.error).toContain('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
     });
   });
 
