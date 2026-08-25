@@ -42,6 +42,16 @@ export function createApp(): Application {
   app.use(cookieParser());
   app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
+  app.get('/', (_req: Request, res: Response) => {
+    res.json({
+      service: 'distributed-job-scheduler-api',
+      status: 'running',
+      health: '/api/v1/health',
+      status_endpoint: '/api/v1/status',
+      docs: '/api/v1/docs',
+    });
+  });
+
   // ─── Rate limiting ────────────────────────────────────────────────────────
   app.use('/api/', rateLimiter);
 
