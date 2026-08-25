@@ -1,6 +1,12 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1';
+const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
+const apiOrigin = configuredApiUrl?.replace(/\/+$/, '') ?? '';
+const BASE_URL = apiOrigin
+  ? apiOrigin.endsWith('/api/v1')
+    ? apiOrigin
+    : `${apiOrigin}/api/v1`
+  : '/api/v1';
 
 /**
  * Pre-configured Axios instance for all API calls.

@@ -30,8 +30,11 @@ export function createApp(): Application {
       origin: (
         process.env.CORS_ORIGINS ??
         process.env.CORS_ORIGIN ??
-        'http://localhost:5173'
-      ).split(','),
+        'http://localhost:5173,https://distributed-job-scheduler-weld-two.vercel.app'
+      )
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean),
       credentials: true,
       exposedHeaders: ['X-Request-Id'],
     })
