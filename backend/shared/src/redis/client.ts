@@ -11,7 +11,15 @@ export function getRedisClient(): Redis {
   if (redisClient) return redisClient;
 
   if (process.env.REDIS_URL) {
-    redisClient = new Redis(process.env.REDIS_URL, {
+    let redisUrl = process.env.REDIS_URL.trim();
+    const cliTlsPrefix = /^redis-cli\s+--tls\s+-u\s+/i;
+    const wasCliTlsUrl = cliTlsPrefix.test(redisUrl);
+    redisUrl = redisUrl.replace(cliTlsPrefix, '');
+    if (wasCliTlsUrl && redisUrl.startsWith('redis://')) {
+      redisUrl = `rediss://${redisUrl.slice('redis://'.length)}`;
+    }
+
+    redisClient = new Redis(redisUrl, {
       maxRetriesPerRequest: 3,
       retryStrategy(times) {
         if (times > 10) return null;
