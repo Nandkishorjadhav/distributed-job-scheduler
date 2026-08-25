@@ -18,6 +18,7 @@ export function getJwtSecret(): string {
 }
 
 export interface AuthenticatedRequest extends Request {
+  id?: string;
   user?: {
     id: string;
     email: string;
