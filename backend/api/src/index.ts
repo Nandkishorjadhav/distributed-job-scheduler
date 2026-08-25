@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { app } from './app';
 import { getPool, logger } from '@job-scheduler/backend-shared';
 
-const PORT = Number(process.env.API_PORT ?? 3000);
+const PORT = Number(process.env.PORT ?? process.env.API_PORT ?? 3000);
 const HOST = process.env.API_HOST ?? '0.0.0.0';
 
 async function bootstrap(): Promise<void> {
