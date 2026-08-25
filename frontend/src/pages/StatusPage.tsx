@@ -31,7 +31,7 @@ interface StatusData {
   timestamp: string;
 }
 
-const API = 'http://localhost:3000';
+const API = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '');
 
 function Badge({ text, color }: { text: string; color: string }) {
   const colors: Record<string, string> = {
@@ -91,7 +91,7 @@ export function StatusPage() {
       setLastPoll(new Date().toLocaleTimeString());
       setCountdown(5);
     } catch {
-      setError('Cannot reach API at http://localhost:3000 — is the backend running?');
+      setError('Cannot reach the configured API. Check the backend deployment.');
     }
   };
 
