@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { API_ORIGIN } from '../api/client';
 
-const API = 'http://localhost:3000';
+const API = API_ORIGIN || '';
 
 const ENDPOINTS = [
   {
@@ -112,7 +113,7 @@ export function ApiExplorer() {
       setStatus(0);
       setElapsed(Date.now() - start);
       setResponse(
-        `Network error: ${e instanceof Error ? e.message : String(e)}\n\nMake sure the API server is running:\n  cd "d:\\Job Scheduler\\backend\\api"\n  npm run dev`
+        `Network error: ${e instanceof Error ? e.message : String(e)}\n\nEnsure the backend API service is running and accessible at ${API || window.location.origin}.`
       );
     }
     setLoading(false);

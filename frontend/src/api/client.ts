@@ -1,11 +1,11 @@
 import axios from 'axios';
 
 const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
-const apiOrigin = configuredApiUrl?.replace(/\/+$/, '') ?? '';
-const BASE_URL = apiOrigin
-  ? apiOrigin.endsWith('/api/v1')
-    ? apiOrigin
-    : `${apiOrigin}/api/v1`
+export const API_ORIGIN = configuredApiUrl?.replace(/\/+$/, '') ?? '';
+export const BASE_URL = API_ORIGIN
+  ? API_ORIGIN.endsWith('/api/v1')
+    ? API_ORIGIN
+    : `${API_ORIGIN}/api/v1`
   : '/api/v1';
 
 /**
