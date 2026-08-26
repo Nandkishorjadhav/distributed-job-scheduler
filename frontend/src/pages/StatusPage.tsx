@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { API_ORIGIN } from '../api/client';
 
 interface HealthData {
   status: string;
@@ -31,7 +32,7 @@ interface StatusData {
   timestamp: string;
 }
 
-const API = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '');
+const API = API_ORIGIN || '';
 
 function Badge({ text, color }: { text: string; color: string }) {
   const colors: Record<string, string> = {
@@ -115,19 +116,10 @@ export function StatusPage() {
         </div>
       </div>
 
-      {/* ── Error banner ───────────────────────── */}
       {error && (
-        <div className="bg-red-950 border border-red-700 rounded-lg p-4 text-red-300 text-sm">
-          <strong>⚠ Connection Error</strong>
-          <br />
-          {error}
-          <br />
-          <br />
-          <strong>Fix:</strong> Open a new terminal and run:
-          <br />
-          <code className="bg-red-900 px-2 py-1 rounded mt-1 inline-block text-xs">
-            cd "d:\Job Scheduler\backend\api" && npm run dev
-          </code>
+        <div className="bg-red-950/60 border border-red-800 rounded-lg p-4 text-red-300 text-sm">
+          <div className="font-bold mb-1">⚠ Connection Error</div>
+          <div>{error}</div>
         </div>
       )}
 
