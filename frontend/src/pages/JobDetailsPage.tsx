@@ -76,7 +76,6 @@ export const JobDetailsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Navigation Header */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate('/jobs')}
@@ -108,7 +107,6 @@ export const JobDetailsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Job Banner */}
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -144,7 +142,6 @@ export const JobDetailsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Timestamps Bar */}
         <div className="mt-6 pt-4 border-t border-gray-800 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
           <div>
             <span className="text-gray-500 block">Enqueued At</span>
@@ -173,7 +170,6 @@ export const JobDetailsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Error or Result Callout */}
       {job?.errorMessage && (
         <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
           <div className="flex items-center gap-2 font-bold mb-1">
@@ -196,7 +192,6 @@ export const JobDetailsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Payload Viewer */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-sm space-y-2">
         <h2 className="text-xs font-bold text-gray-300 uppercase tracking-wider">
           Job Input Payload
@@ -206,7 +201,6 @@ export const JobDetailsPage: React.FC = () => {
         </pre>
       </div>
 
-      {/* Chronological Execution Attempts History */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-sm space-y-4">
         <div className="flex items-center gap-2">
           <History className="w-4 h-4 text-gray-400" />
@@ -259,7 +253,6 @@ export const JobDetailsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Execution Logs Stream */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

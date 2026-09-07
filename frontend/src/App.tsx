@@ -46,10 +46,8 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col font-sans">
-      {/* ── Top Navbar ─────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 bg-gray-900/90 backdrop-blur-md border-b border-gray-800 px-6 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-6">
-          {/* Logo */}
           <button
             onClick={() => navigate('/')}
             className="flex items-center gap-2.5 text-left group focus:outline-none"
@@ -67,7 +65,6 @@ export function App() {
             </div>
           </button>
 
-          {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-1">
             {navigationLinks.map(({ to, label, icon: Icon }) => (
               <NavLink
@@ -89,7 +86,6 @@ export function App() {
           </nav>
         </div>
 
-        {/* User Account / Auth Actions */}
         <div className="flex items-center gap-3">
           {isAuthenticated && user ? (
             <div className="flex items-center gap-3">
@@ -120,7 +116,6 @@ export function App() {
         </div>
       </header>
 
-      {/* ── Mobile Nav Bar ─────────────────────────────────────── */}
       <div className="md:hidden bg-gray-900 border-b border-gray-800 px-4 py-2 flex items-center gap-2 overflow-x-auto">
         {navigationLinks.map(({ to, label, icon: Icon }) => (
           <NavLink
@@ -139,7 +134,6 @@ export function App() {
         ))}
       </div>
 
-      {/* ── Main Page Content ──────────────────────────────────── */}
       <main className="flex-1 p-4 sm:p-6 overflow-auto">
         <Routes>
           <Route path="/" element={<DashboardPage />} />
@@ -159,16 +153,8 @@ export function App() {
         </Routes>
       </main>
 
-      {/* ── Footer ─────────────────────────────────────────────── */}
       <footer className="bg-gray-900/80 border-t border-gray-800 px-6 py-2.5 text-center text-xs text-gray-500 flex flex-col sm:flex-row items-center justify-between gap-2">
         <span><i>Engineered by Nandkishor Jadhav</i></span>
-        {/* <div className="flex items-center gap-4 text-[11px] text-gray-400">
-          <span>PostgreSQL 17</span>
-          <span>·</span>
-          <span>Redis 7</span>
-          <span>·</span>
-          <span>React 18</span>
-        </div> */}
       </footer>
     </div>
   );

@@ -26,13 +26,11 @@ export const JobsPage: React.FC = () => {
     totalPages: 1,
   });
 
-  // Filters
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [status, setStatus] = useState(searchParams.get('status') || '');
   const [queueId, setQueueId] = useState(searchParams.get('queueId') || '');
   const [jobType, setJobType] = useState('');
 
-  // Submit Modal
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [submitMode, setSubmitMode] = useState<'single' | 'batch'>('single');
   const [newJobQueueId, setNewJobQueueId] = useState('');
@@ -42,7 +40,6 @@ export const JobsPage: React.FC = () => {
   const [newJobPayload, setNewJobPayload] = useState('{}');
   const [newJobPriority, setNewJobPriority] = useState(5);
 
-  // Batch fields
   const [batchName, setBatchName] = useState('');
   const [batchDesc, setBatchDesc] = useState('');
   const [batchJson, setBatchJson] = useState('[\n  {\n    "name": "job-1",\n    "type": "immediate",\n    "priority": 5,\n    "payload": {}\n  }\n]');
@@ -197,7 +194,6 @@ export const JobsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header & Submit Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Jobs Explorer</h1>
@@ -214,13 +210,11 @@ export const JobsPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Filter & Search Bar */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 shadow-sm">
         <form
           onSubmit={handleSearchSubmit}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-center"
         >
-          {/* Search Input */}
           <div className="relative lg:col-span-2">
             <Search className="w-4 h-4 absolute left-3 top-3 text-gray-500" />
             <input
@@ -232,7 +226,6 @@ export const JobsPage: React.FC = () => {
             />
           </div>
 
-          {/* Status Filter */}
           <div>
             <select
               value={status}
@@ -253,7 +246,6 @@ export const JobsPage: React.FC = () => {
             </select>
           </div>
 
-          {/* Queue Filter */}
           <div>
             <select
               value={queueId}
@@ -272,7 +264,6 @@ export const JobsPage: React.FC = () => {
             </select>
           </div>
 
-          {/* Search Button */}
           <div className="flex gap-2">
             <button
               type="submit"
@@ -298,7 +289,6 @@ export const JobsPage: React.FC = () => {
         </form>
       </div>
 
-      {/* Jobs Table */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-16">
@@ -381,7 +371,6 @@ export const JobsPage: React.FC = () => {
           </div>
         )}
 
-        {/* Pagination Footer */}
         <div className="px-4 py-3 border-t border-gray-800 flex items-center justify-between text-xs text-gray-400">
           <span>
             Showing <strong>{jobs.length}</strong> of <strong>{pagination.total}</strong> jobs
@@ -408,7 +397,6 @@ export const JobsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal: Submit Job */}
       {showSubmitModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-gray-900 border border-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
