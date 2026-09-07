@@ -108,7 +108,6 @@ export function StatusPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
-      {/* ── Page title ─────────────────────────── */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">System Status</h1>
         <div className="text-xs text-gray-500">
@@ -123,7 +122,6 @@ export function StatusPage() {
         </div>
       )}
 
-      {/* ── Service status cards ────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { name: 'API Server', port: '3000', up: !!health },
@@ -151,7 +149,6 @@ export function StatusPage() {
         ))}
       </div>
 
-      {/* ── Two-column detail grid ─────────────── */}
       {status && (
         <div className="grid md:grid-cols-2 gap-4">
           <Card title="API Info">
@@ -193,7 +190,6 @@ export function StatusPage() {
         </div>
       )}
 
-      {/* ── Endpoint list ──────────────────────── */}
       {status && status.endpoints && (
         <Card title={`API Endpoints (${(status.endpoints || []).length} total)`}>
           <div className="overflow-x-auto">
@@ -235,7 +231,6 @@ export function StatusPage() {
         </Card>
       )}
 
-      {/* ── Last updated ───────────────────────── */}
       {status && (
         <div className="text-xs text-gray-600 text-right">
           Server time: {new Date(status.timestamp).toLocaleString()}

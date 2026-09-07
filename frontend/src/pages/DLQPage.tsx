@@ -19,12 +19,10 @@ export const DLQPage: React.FC = () => {
   const [queues, setQueues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [queueFilter, setQueueFilter] = useState('');
 
-  // Inspect Snapshot Modal
   const [selectedDlqJob, setSelectedDlqJob] = useState<any>(null);
   const [dlqDetails, setDlqDetails] = useState<any>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
@@ -45,9 +43,7 @@ export const DLQPage: React.FC = () => {
       if (dlqRes.data?.data) setDlqJobs(dlqRes.data.data);
       if (statsRes.data?.data) setStats(statsRes.data.data);
       if (queuesRes.data?.data) setQueues(queuesRes.data.data);
-    } catch {
-      // Ignore
-    } finally {
+    } catch {} finally {
       setLoading(false);
     }
   };
@@ -101,9 +97,7 @@ export const DLQPage: React.FC = () => {
       if (res.data?.data) {
         setDlqDetails(res.data.data);
       }
-    } catch {
-      // Ignore
-    } finally {
+    } catch {} finally {
       setLoadingDetails(false);
     }
   };
@@ -117,7 +111,6 @@ export const DLQPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Dead Letter Queue (DLQ)</h1>
@@ -134,7 +127,6 @@ export const DLQPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Summary Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatsCard title="Total Quarantined" value={summary.totalDead} icon={Skull} color="rose" />
         <StatsCard
@@ -152,7 +144,6 @@ export const DLQPage: React.FC = () => {
         <StatsCard title="Archived" value={summary.archived} icon={Archive} color="gray" />
       </div>
 
-      {/* Filter Bar */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 shadow-sm">
         <form
           onSubmit={(e) => {
@@ -162,13 +153,13 @@ export const DLQPage: React.FC = () => {
           className="grid grid-cols-1 sm:grid-cols-3 gap-3"
         >
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-gray-500" />
+            <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
+              placeholder="Search job name or error message..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search error message, job name..."
-              className="w-full bg-gray-950 border border-gray-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-gray-950 border border-gray-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
             />
           </div>
 
@@ -176,11 +167,11 @@ export const DLQPage: React.FC = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-300 focus:outline-none focus:border-blue-500"
+              className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
             >
-              <option value="">All Statuses</option>
-              <option value="unhandled">Unhandled</option>
-              <option value="retried">Retried</option>
+              <option value="">All DLQ Statuses</option>
+              <option value="quarantined">Quarantined (Unhandled)</option>
+              <option value="retried">Re-queued & Retried</option>
               <option value="archived">Archived</option>
             </select>
           </div>
@@ -189,7 +180,7 @@ export const DLQPage: React.FC = () => {
             <select
               value={queueFilter}
               onChange={(e) => setQueueFilter(e.target.value)}
-              className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-300 focus:outline-none focus:border-blue-500"
+              className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
             >
               <option value="">All Queues</option>
               {queues.map((q) => (
@@ -202,7 +193,6 @@ export const DLQPage: React.FC = () => {
         </form>
       </div>
 
-      {/* DLQ Jobs Table */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-16">
@@ -285,7 +275,6 @@ export const DLQPage: React.FC = () => {
         )}
       </div>
 
-      {/* Modal: Inspect DLQ Snapshot */}
       {selectedDlqJob && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-gray-900 border border-gray-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
@@ -317,7 +306,6 @@ export const DLQPage: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4 text-xs">
-                {/* Failure Error Message */}
                 <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 font-mono">
                   <div className="font-bold mb-1">
                     Error Code: {selectedDlqJob.finalErrorCode || 'ERR_MAX_RETRIES_EXCEEDED'}
@@ -325,7 +313,6 @@ export const DLQPage: React.FC = () => {
                   <div>{selectedDlqJob.finalErrorMessage}</div>
                 </div>
 
-                {/* Input Payload */}
                 <div>
                   <h3 className="font-bold text-gray-300 uppercase tracking-wider mb-1">
                     Job Payload
@@ -350,7 +337,6 @@ export const DLQPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Actions Footer */}
                 <div className="flex items-center justify-between pt-4 border-t border-gray-800">
                   <span className="text-gray-500">
                     Failed Worker:{' '}

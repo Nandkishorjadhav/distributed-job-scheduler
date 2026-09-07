@@ -97,7 +97,6 @@ export const DashboardPage: React.FC = () => {
     queuePage * QUEUES_PER_PAGE
   );
 
-  // Latency chart data from true percentiles
   const latencyData = [
     { name: 'Min', duration: executionDuration.minDurationMs ?? 0 },
     { name: 'p50', duration: executionDuration.p50DurationMs ?? 0 },
@@ -108,7 +107,6 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
@@ -157,7 +155,6 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Key Stats Cards ─────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatsCard
           title="Total Jobs"
@@ -203,9 +200,7 @@ export const DashboardPage: React.FC = () => {
         />
       </div>
 
-      {/* ── Middle Section: Latency & Worker Fleet ─────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Latency Percentiles */}
         <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -257,7 +252,6 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Worker Fleet Telemetry */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -323,7 +317,6 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Bottom Section: Active Queues Breakdown ────────── */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
           <div>

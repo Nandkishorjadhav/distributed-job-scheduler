@@ -184,7 +184,6 @@ export function ApiExplorer() {
   const [queues, setQueues] = useState<any[]>([]);
   const [activeQueueId, setActiveQueueId] = useState<string>('');
 
-  // Auto-fetch queues to resolve QUEUE_ID for evaluator testing
   useEffect(() => {
     const fetchQueues = async () => {
       try {
@@ -193,9 +192,7 @@ export function ApiExplorer() {
           setQueues(res.data.data);
           setActiveQueueId(res.data.data[0].id);
         }
-      } catch {
-        // Ignore if unauthenticated
-      }
+      } catch {}
     };
     fetchQueues();
   }, [token]);
@@ -231,7 +228,6 @@ export function ApiExplorer() {
         headers['Authorization'] = `Bearer ${currentToken}`;
       }
 
-      // Replace QUEUE_ID if still in path
       let finalPath = customPath;
       if (finalPath.includes('QUEUE_ID')) {
         if (activeQueueId) {
@@ -255,7 +251,6 @@ export function ApiExplorer() {
         const json = JSON.parse(text);
         setResponse(JSON.stringify(json, null, 2));
 
-        // Auto-capture and save token if login or register succeeded
         if (json.data?.token) {
           const newToken = json.data.token;
           setToken(newToken);
@@ -308,7 +303,6 @@ export function ApiExplorer() {
       </div>
 
       <div className="grid md:grid-cols-[300px_1fr] gap-4">
-        {/* ── Left: endpoint list ──────────── */}
         <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden h-fit max-h-[750px] overflow-y-auto">
           <div className="px-3 py-2 bg-gray-950/80 border-b border-gray-800 text-xs font-semibold text-gray-400 uppercase tracking-wider">
             Endpoints ({ENDPOINTS.length})
@@ -340,9 +334,7 @@ export function ApiExplorer() {
           ))}
         </div>
 
-        {/* ── Right: request + response ────── */}
         <div className="space-y-3">
-          {/* Endpoint header & Path Editor */}
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <span className={`text-xs font-bold px-2 py-1.5 rounded border w-fit ${methodColor(selected.method)}`}>
@@ -361,7 +353,6 @@ export function ApiExplorer() {
             </div>
             <p className="text-xs text-gray-400">{selected.desc}</p>
 
-            {/* Queue ID Auto-Selector if path has a queue */}
             {queues.length > 0 && selected.path.includes('queues/') && (
               <div className="flex items-center gap-2 pt-2 border-t border-gray-800 text-xs">
                 <span className="text-gray-400 font-semibold">Select Queue:</span>
@@ -380,7 +371,6 @@ export function ApiExplorer() {
             )}
           </div>
 
-          {/* JWT token input (for protected routes) */}
           {selected.auth && (
             <div className="bg-gray-900 border border-yellow-800/50 rounded-lg p-3 space-y-1.5">
               <div className="flex items-center justify-between text-xs">
@@ -411,7 +401,6 @@ export function ApiExplorer() {
             </div>
           )}
 
-          {/* Request body */}
           {selected.body !== null && (
             <div className="bg-gray-900 border border-gray-800 rounded-lg p-3">
               <div className="flex items-center justify-between mb-1.5">
@@ -426,7 +415,6 @@ export function ApiExplorer() {
             </div>
           )}
 
-          {/* Send button */}
           <button
             onClick={send}
             disabled={loading}
@@ -439,7 +427,6 @@ export function ApiExplorer() {
             )}
           </button>
 
-          {/* Response */}
           {(response || status !== null) && (
             <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-2">
               <div className="flex items-center gap-3 pb-2 border-b border-gray-800">
