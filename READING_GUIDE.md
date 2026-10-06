@@ -91,7 +91,7 @@ Explore the external interfaces, interactive UI, metrics telemetry, error handli
 | **20** | [**`uiguide.md`**](file:///d:/Job%20Scheduler/uiguide.md)                                                                           | **Web Dashboard User Guide**: Interactive UI guide covering the Overview Dashboard, 20-item paginated Queue Backlog table, Jobs Explorer, DLQ Inspector, and Workers monitor.                |
 | **21** | [**`docs/15_react_dashboard_application.md`**](file:///d:/Job%20Scheduler/docs/15_react_dashboard_application.md)                   | **Frontend Architecture**: React 18 component structure, state management, auto-polling telemetry hooks, routing, and Tailwind styling.                                                      |
 | **22** | [**`errors.md`**](file:///d:/Job%20Scheduler/errors.md)                                                                             | **Error Catalog & Troubleshooting Guide**: Comprehensive directory of API error codes, database constraint errors (`23514`, `23505`, `23503`), common pitfalls, and fixes.                   |
-| **23** | [**`docs/audit_report.md`**](file:///d:/Job%20Scheduler/docs/audit_report.md)                                                         | **Engineering Review & Audit Report**: Senior engineering audit, requirement coverage matrix, high-concurrency analysis, and test verification results.       |
+| **23** | [**`docs/audit_report.md`**](file:///d:/Job%20Scheduler/docs/audit_report.md)                                                       | **Engineering Review & Audit Report**: Senior engineering audit, requirement coverage matrix, high-concurrency analysis, and test verification results.                                      |
 
 ---
 

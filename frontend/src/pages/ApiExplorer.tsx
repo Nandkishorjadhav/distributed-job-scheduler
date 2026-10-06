@@ -291,7 +291,8 @@ export function ApiExplorer() {
         <div>
           <h1 className="text-2xl font-bold text-white">Interactive API Explorer</h1>
           <p className="text-sm text-gray-400">
-            Execute live API calls against your cluster. Authenticated requests automatically use your login session.
+            Execute live API calls against your cluster. Authenticated requests automatically use
+            your login session.
           </p>
         </div>
         {hasSessionToken && (
@@ -318,7 +319,9 @@ export function ApiExplorer() {
               }`}
             >
               <div className="flex items-center justify-between gap-2 mb-0.5">
-                <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${methodColor(ep.method)}`}>
+                <span
+                  className={`text-xs font-bold px-1.5 py-0.5 rounded border ${methodColor(ep.method)}`}
+                >
                   {ep.method}
                 </span>
                 {ep.auth ? (
@@ -337,7 +340,9 @@ export function ApiExplorer() {
         <div className="space-y-3">
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <span className={`text-xs font-bold px-2 py-1.5 rounded border w-fit ${methodColor(selected.method)}`}>
+              <span
+                className={`text-xs font-bold px-2 py-1.5 rounded border w-fit ${methodColor(selected.method)}`}
+              >
                 {selected.method}
               </span>
               <div className="flex-1 flex items-center gap-1 bg-gray-950 border border-gray-800 rounded px-3 py-1.5">
@@ -376,7 +381,11 @@ export function ApiExplorer() {
               <div className="flex items-center justify-between text-xs">
                 <label className="text-yellow-400 font-semibold flex items-center gap-1">
                   <span>🔒 Bearer JWT Token</span>
-                  {token && <span className="text-green-400 text-[11px] font-normal">(Auto-attached from session)</span>}
+                  {token && (
+                    <span className="text-green-400 text-[11px] font-normal">
+                      (Auto-attached from session)
+                    </span>
+                  )}
                 </label>
                 {token && (
                   <button
@@ -432,11 +441,15 @@ export function ApiExplorer() {
               <div className="flex items-center gap-3 pb-2 border-b border-gray-800">
                 <span className="text-xs text-gray-400 font-semibold">Response</span>
                 {status !== null && (
-                  <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded border bg-gray-950 ${statusColor}`}>
+                  <span
+                    className={`text-xs font-bold font-mono px-2 py-0.5 rounded border bg-gray-950 ${statusColor}`}
+                  >
                     HTTP {status}
                   </span>
                 )}
-                {elapsed !== null && <span className="text-xs text-gray-500 font-mono">{elapsed} ms</span>}
+                {elapsed !== null && (
+                  <span className="text-xs text-gray-500 font-mono">{elapsed} ms</span>
+                )}
               </div>
               <pre className="text-xs font-mono text-gray-300 overflow-auto max-h-80 whitespace-pre-wrap break-all bg-gray-950 p-3 rounded border border-gray-850">
                 {response}
@@ -448,4 +461,3 @@ export function ApiExplorer() {
     </div>
   );
 }
-

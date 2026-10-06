@@ -154,7 +154,9 @@ export function App() {
       </main>
 
       <footer className="bg-gray-900/80 border-t border-gray-800 px-6 py-2.5 text-center text-xs text-gray-500 flex flex-col sm:flex-row items-center justify-between gap-2">
-        <span><i>Engineered by Nandkishor Jadhav</i></span>
+        <span>
+          <i>Engineered by Nandkishor Jadhav</i>
+        </span>
       </footer>
     </div>
   );

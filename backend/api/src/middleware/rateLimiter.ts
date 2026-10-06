@@ -8,13 +8,11 @@ export const rateLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, error: 'Too many requests, please slow down.' },
   handler: (_req: Request, res: Response) => {
-    res
-      .status(429)
-      .json({
-        success: false,
-        error: 'Too many requests, please slow down.',
-        code: 'TOO_MANY_REQUESTS',
-      });
+    res.status(429).json({
+      success: false,
+      error: 'Too many requests, please slow down.',
+      code: 'TOO_MANY_REQUESTS',
+    });
   },
   skip: (req: Request) => {
     // Skip rate limiting for health checks and tests

@@ -220,9 +220,12 @@ export const DashboardPage: React.FC = () => {
             {executionDuration.totalExecutionsCount === 0 ? (
               <div className="h-full flex flex-col items-center justify-center border border-dashed border-gray-800 rounded-xl bg-gray-950/40 p-6 text-center">
                 <Activity className="w-8 h-8 text-gray-600 mb-2" />
-                <p className="text-sm font-semibold text-gray-300">No Job Executions Recorded Yet</p>
+                <p className="text-sm font-semibold text-gray-300">
+                  No Job Executions Recorded Yet
+                </p>
                 <p className="text-xs text-gray-500 max-w-sm mt-1">
-                  Submit and process jobs with your active worker fleet to view real-time latency percentiles (Min, p50, Avg, p95, p99).
+                  Submit and process jobs with your active worker fleet to view real-time latency
+                  percentiles (Min, p50, Avg, p95, p99).
                 </p>
                 <button
                   onClick={() => navigate('/jobs')}
