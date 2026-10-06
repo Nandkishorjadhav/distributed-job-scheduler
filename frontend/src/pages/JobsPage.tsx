@@ -42,7 +42,9 @@ export const JobsPage: React.FC = () => {
 
   const [batchName, setBatchName] = useState('');
   const [batchDesc, setBatchDesc] = useState('');
-  const [batchJson, setBatchJson] = useState('[\n  {\n    "name": "job-1",\n    "type": "immediate",\n    "priority": 5,\n    "payload": {}\n  }\n]');
+  const [batchJson, setBatchJson] = useState(
+    '[\n  {\n    "name": "job-1",\n    "type": "immediate",\n    "priority": 5,\n    "payload": {}\n  }\n]'
+  );
 
   const fetchJobs = async () => {
     setLoading(true);
@@ -130,7 +132,8 @@ export const JobsPage: React.FC = () => {
         }
 
         const cleanedJobs = parsedJobs.map((j: any, idx: number) => ({
-          name: typeof j.name === 'string' && j.name.trim() ? j.name.trim() : `batch-task-${idx + 1}`,
+          name:
+            typeof j.name === 'string' && j.name.trim() ? j.name.trim() : `batch-task-${idx + 1}`,
           type: j.type || 'immediate',
           priority: isNaN(Number(j.priority)) ? 5 : Math.max(1, Math.min(10, Number(j.priority))),
           payload:
@@ -517,7 +520,9 @@ export const JobsPage: React.FC = () => {
                       <label className="block text-xs font-semibold text-gray-300 uppercase">
                         Payload (JSON Object)
                       </label>
-                      <span className="text-[10px] text-gray-500 font-medium">Quick Templates:</span>
+                      <span className="text-[10px] text-gray-500 font-medium">
+                        Quick Templates:
+                      </span>
                     </div>
 
                     {/* Quick Template Pills */}
@@ -630,7 +635,10 @@ export const JobsPage: React.FC = () => {
                       className="w-full font-mono bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-xs text-blue-300 focus:outline-none focus:border-blue-500"
                     />
                     <p className="text-[11px] text-gray-500 mt-1">
-                      Format: Valid JSON object <code className="text-gray-400">{`{ "key": "value" }`}</code>. Test flags: <code className="text-gray-400">"shouldFail": true</code> (triggers retry/DLQ) or <code className="text-gray-400">"sleepMs": 1000</code>.
+                      Format: Valid JSON object{' '}
+                      <code className="text-gray-400">{`{ "key": "value" }`}</code>. Test flags:{' '}
+                      <code className="text-gray-400">"shouldFail": true</code> (triggers retry/DLQ)
+                      or <code className="text-gray-400">"sleepMs": 1000</code>.
                     </p>
                   </div>
                 </>
@@ -730,7 +738,11 @@ export const JobsPage: React.FC = () => {
                       className="w-full font-mono bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-xs text-blue-300 focus:outline-none focus:border-blue-500"
                     />
                     <p className="text-[11px] text-gray-500 mt-1">
-                      Format: JSON array of job objects with <code className="text-gray-400">name</code>, <code className="text-gray-400">priority (1-10)</code>, <code className="text-gray-400">type</code>, and <code className="text-gray-400">payload</code>.
+                      Format: JSON array of job objects with{' '}
+                      <code className="text-gray-400">name</code>,{' '}
+                      <code className="text-gray-400">priority (1-10)</code>,{' '}
+                      <code className="text-gray-400">type</code>, and{' '}
+                      <code className="text-gray-400">payload</code>.
                     </p>
                   </div>
                 </>

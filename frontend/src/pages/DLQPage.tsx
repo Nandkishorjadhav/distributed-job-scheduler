@@ -43,7 +43,8 @@ export const DLQPage: React.FC = () => {
       if (dlqRes.data?.data) setDlqJobs(dlqRes.data.data);
       if (statsRes.data?.data) setStats(statsRes.data.data);
       if (queuesRes.data?.data) setQueues(queuesRes.data.data);
-    } catch {} finally {
+    } catch {
+    } finally {
       setLoading(false);
     }
   };
@@ -97,7 +98,8 @@ export const DLQPage: React.FC = () => {
       if (res.data?.data) {
         setDlqDetails(res.data.data);
       }
-    } catch {} finally {
+    } catch {
+    } finally {
       setLoadingDetails(false);
     }
   };
